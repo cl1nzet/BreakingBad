@@ -17,11 +17,16 @@ namespace Game.Models.Scenes {
         private int _timerID = -1;
         private ReactionData _currentReaction;
 
+        private GraphicsDevice _graphicsDevice;
+        public GameScene(GraphicsDevice graphicsDevice) {
+            _graphicsDevice = graphicsDevice;
+        }
+
         public override void Start() {
             SpriteFont font = AssetManager.GetFont("Arial");
 
             _equationText = new InteractiveText(
-                position: Screen.ScreenCenter,
+                position: new Vector2(Screen.ScreenCenterX - 700, Screen.ScreenCenterY - 400),
                 scale: new Vector2(2.5f, 2.5f),
                 scene: this,
                 font: font,
@@ -29,7 +34,7 @@ namespace Game.Models.Scenes {
             );
 
             _timerText = new Text(
-                position: new Vector2(Screen.ScreenCenterX, Screen.ScreenCenterY - 200),
+                position: new Vector2(Screen.ScreenCenterX, Screen.ScreenCenterY - 450),
                 scene: this,
                 text: "Осталось времени: 30с",
                 font: font,
@@ -37,13 +42,20 @@ namespace Game.Models.Scenes {
             );
 
             var exitButton = new Button(
-                position: new Vector2(Screen.ScreenWidth - 200, Screen.ScreenHeight - 200),
+                position: new Vector2(Screen.ScreenWidth - 100, Screen.ScreenHeight - 100),
                 scale: new Vector2(0.5f, 0.5f),
                 scene: this,
                 texture: AssetManager.GetTexture("Button"),
                 text: "Обратно",
                 font: AssetManager.GetFont("Arial"),
                 textColor: Color.Black
+            );
+
+            var keyboard = new VirtualKeyboard(
+                position: new Vector2(Screen.ScreenCenterX, Screen.ScreenCenterY + 300),
+                scene: this,
+                font: font,
+                graphicsDevice: _graphicsDevice
             );
 
             exitButton.OnClick += SceneManager.LoadScene;

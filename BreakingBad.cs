@@ -44,7 +44,7 @@ namespace Breaking_Bad
             Content.Load<Texture2D>("Button");
             Content.Load<SpriteFont>("Arial");
             var menuScene = new MenuScene();
-            var gameScene = new GameScene();
+            var gameScene = new GameScene(GraphicsDevice);
             SceneManager.Add(menuScene);
             SceneManager.Add(gameScene);
 
@@ -66,7 +66,6 @@ namespace Breaking_Bad
             }
             GraphicsDevice.Clear(Color.CornflowerBlue);
             SceneManager.Draw(_spriteBatch);
-
             base.Draw(gameTime);
         }
     }
