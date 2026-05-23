@@ -24,9 +24,7 @@ namespace Engine.Core
         public void Add(Specs.IUpdateable updateable) => _updateablesToAdd.Add(updateable);
         public void Remove(Specs.IUpdateable updateable) => _updateablesToRemove.Add(updateable);
 
-        public virtual void Draw(SpriteBatch sb)
-        {
-            PostProcessCollections();
+        public virtual void Draw(SpriteBatch sb) {
             sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
 
             for (int i = 0; i < _drawables.Count; i++) {

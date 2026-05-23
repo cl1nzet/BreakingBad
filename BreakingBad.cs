@@ -31,19 +31,17 @@ namespace Breaking_Bad
             TouchPanel.EnabledGestures = GestureType.Tap;
 
             Screen.Initialize(_graphics, Window);
-            Screen.Resize(1920, 1080, false);
             Screen.SetWindowTitle(storage.Get("WinTitle", "Breaking Bad"));
             Window.AllowUserResizing = storage.Get("WindowResizing", false);
 
             AppQuit = Exit;
 
             base.Initialize();
+            Screen.Resize(1920, 1080, false);
         }
 
         protected override void LoadContent() {
             AssetManager.Init(Content);
-            Content.Load<Texture2D>("Button");
-            Content.Load<SpriteFont>("Arial");
             var menuScene = new MenuScene();
             var gameScene = new GameScene(GraphicsDevice);
             SceneManager.Add(menuScene);

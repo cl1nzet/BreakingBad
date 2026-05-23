@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using Game.Models;
 using Game.Utils;
 
@@ -49,7 +50,7 @@ namespace Game.Core {
             try
             {
                 Storage storage = new Storage();
-                storage.Initialize("reactions.json");
+                storage.Initialize(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"reactions.json"));
 
                 Pools[(int)Difficulty.Easy] = storage.Get<ReactionData[]>("Easy") ?? easyDefault;
                 Pools[(int)Difficulty.Normal] = storage.Get<ReactionData[]>("Normal") ?? normalDefault;

@@ -34,7 +34,7 @@ namespace Game.Models.Scenes {
             );
 
             _timerText = new Text(
-                position: new Vector2(Screen.ScreenCenterX, Screen.ScreenCenterY - 450),
+                position: Screen.ScreenTop,
                 scene: this,
                 text: "Осталось времени: 30с",
                 font: font,
