@@ -22,6 +22,7 @@ namespace Game.Models.Scenes {
 
             _equationText = new InteractiveText(
                 position: Screen.ScreenCenter,
+                scale: new Vector2(2.5f, 2.5f),
                 scene: this,
                 font: font,
                 color: Color.White

@@ -49,8 +49,8 @@ namespace Engine.Models {
         public float Height => MeasureString().Y;
         public bool IsFocused { get => _isFocused; set => _isFocused = value; }
 
-        public InteractiveText(Vector2 position, Scene scene, SpriteFont font, Color? color = null)
-            : base(new Transform(position), scene)
+        public InteractiveText(Vector2 position, Vector2 scale, Scene scene, SpriteFont font, Color? color = null)
+            : base(new Transform(position, scale), scene)
         {
             _font = font;
             Color = color ?? Color.White;
