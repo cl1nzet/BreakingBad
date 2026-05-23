@@ -1,4 +1,5 @@
 ﻿using Engine.Core;
+using Engine.Core.Timer;
 using Engine.Utils;
 using Game.Models.Scenes;
 using Game.Utils;
@@ -55,6 +56,7 @@ namespace Breaking_Bad
         protected override void Update(GameTime gameTime)
         {
             SceneManager.Update(gameTime);
+            TimerManager.Update(gameTime);
 
             base.Update(gameTime);
         }
