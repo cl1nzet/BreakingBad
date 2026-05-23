@@ -5,7 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
 namespace Engine.Models {
-    public sealed class InteractiveText : GameObject, Specs.IDrawable {
+    public sealed class InteractiveText : GameObject, Specs.IVisualComponent {
         private string _text = string.Empty;
         private SpriteFont _font;
         private Vector2 _size;
@@ -198,10 +198,15 @@ namespace Engine.Models {
             return _size;
         }
 
-        public override void OnToggled(bool val)
-        {
-            if (val) CurrentScene.Add(this);
-            else CurrentScene.Remove(this);
+        public override void OnToggled(bool val) {
+            if (val) {
+                CurrentScene.Add((Specs.IUpdateable)this);
+                CurrentScene.Add((Specs.IDrawable)this);
+            }
+            else {
+                CurrentScene.Remove((Specs.IUpdateable)this);
+                CurrentScene.Remove((Specs.IDrawable)this);
+            }
         }
 
         public void Dispose() => IsActive = false;
