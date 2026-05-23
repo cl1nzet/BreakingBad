@@ -6,7 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
 namespace Game.Models {
-    public sealed class VirtualKeyboard : GameObject, Engine.Specs.IDrawable
+    public sealed class VirtualKeyboard : GameObject, Engine.Specs.IVisualComponent
     {
         private readonly string[][] _layout = new string[][]
         {
@@ -112,14 +112,18 @@ namespace Game.Models {
             }
         }
 
-        public override void OnToggled(bool val)
-        {
-            if (val) CurrentScene.Add(this);
-            else CurrentScene.Remove(this);
+        public override void OnToggled(bool val) {
+            if (val) {
+                CurrentScene.Add((Engine.Specs.IUpdateable)this);
+                CurrentScene.Add((Engine.Specs.IDrawable)this);
+            }
+            else {
+                CurrentScene.Remove((Engine.Specs.IUpdateable)this);
+                CurrentScene.Remove((Engine.Specs.IDrawable)this);
+            }
         }
 
-        public void Dispose()
-        {
+        public void Dispose() {
             IsActive = false;
             _pixel?.Dispose();
         }
