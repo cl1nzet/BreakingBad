@@ -69,10 +69,7 @@ namespace Game.Models {
             }
         }
 
-        public void Update(GameTime gt)
-        {
-            if (!IsActive) return;
-
+        public void Update(GameTime gt) {
             MouseState currentMouse = Mouse.GetState();
 
             if (currentMouse.LeftButton == ButtonState.Pressed && _previousMouse.LeftButton == ButtonState.Released)

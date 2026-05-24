@@ -5,7 +5,7 @@ using System.Text.Json;
 using System.Threading;
 
 namespace Game.Utils {
-    public class Storage {
+    public sealed class Storage {
         private string _filePath;
         private string _backupPath;
         private readonly Dictionary<string, JsonElement> _rawCache = new(StringComparer.Ordinal);
