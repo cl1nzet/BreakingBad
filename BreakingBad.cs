@@ -25,9 +25,8 @@ namespace Breaking_Bad
         }
 
         protected override void Initialize() {
-            var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json");
             storage = new Storage();
-            storage.Initialize(path);
+            storage.Initialize("config.json");
             TouchPanel.EnabledGestures = GestureType.Tap;
 
             Screen.Initialize(_graphics, Window);

@@ -53,7 +53,7 @@ namespace Game.Core
             try
             {
                 Storage storage = new Storage();
-                storage.Initialize(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "reactions.json"));
+                storage.Initialize("reactions.json");
 
                 bool isDirty = false;
 
