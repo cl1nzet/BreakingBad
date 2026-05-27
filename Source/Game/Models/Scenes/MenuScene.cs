@@ -36,7 +36,7 @@ namespace Game.Models.Scenes {
                 textColor: Color.Black
             );
 
-            PlayButton.OnClick += () => SceneManager.LoadScene("Game");
+            PlayButton.OnClick += () => SceneManager.LoadScene("Difficulty");
             ExitButton.OnClick += BreakingBad.AppQuit.Invoke;
         }
     }

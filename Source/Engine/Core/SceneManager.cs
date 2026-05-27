@@ -1,11 +1,10 @@
-﻿using Engine.Utils;
+﻿using System.Threading.Tasks;
+using Engine.Utils;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace Engine.Core
-{
-    public static class SceneManager
-    {
+namespace Engine.Core {
+    public static class SceneManager {
         public const int ScenesCount = 8;
 
         public static Scene CurrentScene { get; private set; }
@@ -15,34 +14,47 @@ namespace Engine.Core
 
         private readonly static Arcane<Scene> _scenes = new(ScenesCount);
 
-        public static void Add(Scene scene) {
+        public static void Add(Scene scene)
+        {
             scene.Index = _scenes.Length;
             _scenes.Add(scene);
         }
 
-        public static void LoadScene(Scene scene) {
+        public static async Task LoadSceneAsync(Scene scene, int delay = 100)
+        {
             if (scene == null || !_scenes.Contains(scene)) return;
 
             CurrentScene?.Unload();
+
+            await Task.Delay(delay);
+
             CurrentScene = scene;
             CurrentScene.Start();
         }
 
-        public static void LoadScene() => LoadScene(0);
-        public static void LoadScene(int index) {
+        public static void LoadScene() => _ = LoadSceneAsync(0);
+
+        public static async Task LoadSceneAsync(int index)
+        {
             if (index < 0 || index >= _scenes.Length) return;
 
-            LoadScene(_scenes[index]);
+            await LoadSceneAsync(_scenes[index]);
         }
 
-        public static void LoadScene(string name) {
-            for (int i = 0; i < _scenes.Length; i++) {
-                if (_scenes[i].SceneName == name) {
-                    LoadScene(_scenes[i]);
+        public static async Task LoadSceneAsync(string name)
+        {
+            for (int i = 0; i < _scenes.Length; i++)
+            {
+                if (_scenes[i].SceneName == name)
+                {
+                    await LoadSceneAsync(_scenes[i]);
                     return;
                 }
             }
         }
+
+        public static void LoadScene(int index) => _ = LoadSceneAsync(index);
+        public static void LoadScene(string name) => _ = LoadSceneAsync(name);
 
         public static void Start() => CurrentScene?.Start();
         public static void Update(GameTime gt) => CurrentScene?.Update(gt);

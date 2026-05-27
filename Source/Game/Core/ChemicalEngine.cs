@@ -1,5 +1,6 @@
 ﻿using System;
-using System.IO;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Game.Models;
 using Game.Utils;
 
@@ -9,6 +10,19 @@ namespace Game.Core
     {
         private static readonly ReactionData[][] Pools;
         private static readonly Random Rnd = new();
+
+        private readonly static Dictionary<Difficulty, float> _diffTimes = new() {
+        { Difficulty.Easy, 25f },
+        { Difficulty.Normal, 20f },
+        { Difficulty.Hard, 15f },
+        { Difficulty.Impossible, 10f }
+        };
+
+        private static Difficulty _currentDifficulty;
+        public static Difficulty CurrentDifficulty {
+            get => _currentDifficulty;
+            set => _currentDifficulty = value;
+        }
 
         static ChemicalEngine()
         {
@@ -73,6 +87,8 @@ namespace Game.Core
             }
             catch { }
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReactionData Generate() => Generate(CurrentDifficulty);
 
         public static ReactionData Generate(Difficulty difficulty)
         {
@@ -82,6 +98,11 @@ namespace Game.Core
                 return pool[Rnd.Next(pool.Length)];
             }
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float GetDifficultyMaxTime() => GetDifficultyMaxTime(CurrentDifficulty);
+
+        public static float GetDifficultyMaxTime(Difficulty difficulty) => _diffTimes[difficulty];
 
         public static bool Verify(in ReactionData reaction, string input)
         {

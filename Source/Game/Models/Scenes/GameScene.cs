@@ -17,7 +17,8 @@ namespace Game.Models.Scenes
         private Text _timerText;
         private int _timerID = -1;
         private ReactionData _currentReaction;
-        private readonly float _maxTime = 30f;
+
+        private static float _maxTime;
 
         private GraphicsDevice _graphicsDevice;
         public GameScene(GraphicsDevice graphicsDevice)
@@ -40,7 +41,7 @@ namespace Game.Models.Scenes
             _timerText = new Text(
                 position: new Vector2(Screen.ScreenCenterX - 700, Screen.ScreenCenterY - 350),
                 scene: this,
-                text: "Осталось времени: 30с",
+                text: "Осталось времени: 25с/25с",
                 font: font,
                 color: Color.Green
             );
@@ -76,7 +77,7 @@ namespace Game.Models.Scenes
             if (_timerID != -1) {
                 float remaining = TimerManager.GetRemainingTime(_timerID);
                 if (remaining >= 0f) {
-                    _timerText.Content = $"Осталось времени: {Math.Ceiling(remaining)}с";
+                    _timerText.Content = $"Осталось времени: {Math.Ceiling(remaining)}с/{_maxTime}с ";
                     _timerText.Color = GetTimerColor(remaining);
                 }
             }
@@ -104,9 +105,9 @@ namespace Game.Models.Scenes
             }
         }
 
-        private void StartNewRound()
-        {
-            _currentReaction = ChemicalEngine.Generate(Difficulty.Normal);
+        private void StartNewRound() {
+            _maxTime = ChemicalEngine.GetDifficultyMaxTime();
+            _currentReaction = ChemicalEngine.Generate();
 
             _equationText.Content = FormatReaction(_currentReaction);
 
