@@ -3,12 +3,14 @@
 namespace Game.Models {
     public readonly struct KeyboardButton {
         public readonly string Key;
-        public readonly Rectangle Bounds;
+        public readonly Rectangle RelativeBounds;
+        public readonly Vector2 TextOffset;
 
-        public KeyboardButton(string key, Rectangle bounds)
+        public KeyboardButton(string key, Rectangle relativeBounds, Vector2 textOffset)
         {
             Key = key;
-            Bounds = bounds;
+            RelativeBounds = relativeBounds;
+            TextOffset = textOffset;
         }
     }
 }

@@ -42,7 +42,7 @@ namespace Game.Models.Scenes {
             );
 
             var exitButton = new Button(
-                position: new Vector2(Screen.ScreenWidth - 100, Screen.ScreenHeight - 100),
+                position: Screen.ScreenRightDown - new Vector2(400f, 250f),
                 scale: new Vector2(0.5f, 0.5f),
                 scene: this,
                 texture: AssetManager.GetTexture("Button"),
@@ -52,9 +52,10 @@ namespace Game.Models.Scenes {
             );
 
             var keyboard = new VirtualKeyboard(
-                position: new Vector2(Screen.ScreenCenterX, Screen.ScreenCenterY + 300),
+                position: new Vector2(Screen.ScreenCenterX - 700, Screen.ScreenCenterY - 300),
                 scene: this,
                 font: font,
+                text: _equationText,
                 graphicsDevice: _graphicsDevice
             );
 

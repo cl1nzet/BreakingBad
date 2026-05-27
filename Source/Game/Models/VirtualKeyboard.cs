@@ -1,38 +1,67 @@
 ﻿using System;
+using System.Reflection;
 using Engine.Core;
 using Engine.Models;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
-namespace Game.Models {
+namespace Game.Models
+{
     public sealed class VirtualKeyboard : GameObject, Engine.Specs.IVisualComponent
     {
-        private readonly string[][] _layout = new string[][]
+        private static readonly string[][] Layout =
         {
-            new string[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" },
-            new string[] { "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P" },
-            new string[] { "A", "S", "D", "F", "G", "H", "J", "K", "L", null },
-            new string[] { "Z", "X", "C", "V", "B", "N", "M", "DEL", null, null }
+            new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" },
+            new[] { "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P" },
+            new[] { "A", "S", "D", "F", "G", "H", "J", "K", "L", null },
+            new[] { "Z", "X", "C", "V", "B", "N", "M", "DEL", null, null }
         };
+
+        private static readonly FieldInfo CursorField = typeof(InteractiveText).GetField("_cursorIndex", BindingFlags.NonPublic | BindingFlags.Instance);
 
         private KeyboardButton[] _buttons;
         private int _buttonCount;
         private SpriteFont _font;
         private MouseState _previousMouse;
         private Texture2D _pixel;
+        private readonly InteractiveText _targetText;
 
-        public Vector2 ButtonSize { get; set; } = new Vector2(50f, 50f);
-        public Vector2 Spacing { get; set; } = new Vector2(5f, 5f);
-        public Color ButtonColor { get; set; } = new Color(40, 40, 40);
+        private Vector2 _buttonSize = new(50f, 50f);
+        private Vector2 _spacing = new(5f, 5f);
+
+        public Vector2 ButtonSize
+        {
+            get => _buttonSize;
+            set
+            {
+                if (_buttonSize == value) return;
+                _buttonSize = value;
+                BuildLayout();
+            }
+        }
+
+        public Vector2 Spacing
+        {
+            get => _spacing;
+            set
+            {
+                if (_spacing == value) return;
+                _spacing = value;
+                BuildLayout();
+            }
+        }
+
+        public Color ButtonColor { get; set; } = new(40, 40, 40);
         public Color TextColor { get; set; } = Color.White;
 
         public Action<string> OnKeyPressed;
 
-        public VirtualKeyboard(Vector2 position, Scene scene, SpriteFont font, GraphicsDevice graphicsDevice)
+        public VirtualKeyboard(Vector2 position, Scene scene, SpriteFont font, InteractiveText text, GraphicsDevice graphicsDevice)
             : base(new Transform(position), scene)
         {
             _font = font;
+            _targetText = text;
 
             _pixel = new Texture2D(graphicsDevice, 1, 1);
             _pixel.SetData(new[] { Color.White });
@@ -42,45 +71,73 @@ namespace Game.Models {
 
         public void BuildLayout()
         {
-            int maxPossibleButtons = 40;
-            _buttons = new KeyboardButton[maxPossibleButtons];
+            if (_font == null) return;
+
+            int count = 0;
+            for (int r = 0; r < Layout.Length; r++)
+            {
+                for (int c = 0; c < Layout[r].Length; c++)
+                {
+                    if (!string.IsNullOrEmpty(Layout[r][c])) count++;
+                }
+            }
+
+            _buttons = new KeyboardButton[count];
             _buttonCount = 0;
 
-            Vector2 basePos = Transform.Position;
+            float bWidth = _buttonSize.X;
+            float bHeight = _buttonSize.Y;
+            float sX = _spacing.X;
+            float sY = _spacing.Y;
 
-            for (int row = 0; row < _layout.Length; row++)
+            for (int row = 0; row < Layout.Length; row++)
             {
-                for (int col = 0; col < _layout[row].Length; col++)
+                for (int col = 0; col < Layout[row].Length; col++)
                 {
-                    string key = _layout[row][col];
+                    string key = Layout[row][col];
                     if (string.IsNullOrEmpty(key)) continue;
 
-                    float posX = basePos.X + col * (ButtonSize.X + Spacing.X);
-                    float posY = basePos.Y + row * (ButtonSize.Y + Spacing.Y);
+                    float posX = col * (bWidth + sX);
+                    float posY = row * (bHeight + sY);
 
-                    Vector2 size = ButtonSize;
+                    float currentWidth = bWidth;
                     if (key == "DEL")
                     {
-                        size.X = (ButtonSize.X * 2f) + Spacing.X;
+                        currentWidth = (bWidth * 2f) + sX;
                     }
 
-                    _buttons[_buttonCount++] = new KeyboardButton(key, new Rectangle((int)posX, (int)posY, (int)size.X, (int)size.Y));
+                    Rectangle relativeBounds = new((int)posX, (int)posY, (int)currentWidth, (int)bHeight);
+                    Vector2 textSize = _font.MeasureString(key);
+                    Vector2 textOffset = new(
+                        posX + (currentWidth - textSize.X) * 0.5f,
+                        posY + (bHeight - textSize.Y) * 0.5f
+                    );
+
+                    _buttons[_buttonCount++] = new KeyboardButton(key, relativeBounds, textOffset);
                 }
             }
         }
 
-        public void Update(GameTime gt) {
+        public void Update(GameTime gt)
+        {
+            if (!IsActive) return;
+
             MouseState currentMouse = Mouse.GetState();
 
             if (currentMouse.LeftButton == ButtonState.Pressed && _previousMouse.LeftButton == ButtonState.Released)
             {
                 Point mousePos = currentMouse.Position;
+                Vector2 basePos = Transform.Position;
+
+                int relativeMouseX = mousePos.X - (int)basePos.X;
+                int relativeMouseY = mousePos.Y - (int)basePos.Y;
 
                 for (int i = 0; i < _buttonCount; i++)
                 {
-                    if (_buttons[i].Bounds.Contains(mousePos))
+                    ref readonly var btn = ref _buttons[i];
+                    if (btn.RelativeBounds.Contains(relativeMouseX, relativeMouseY))
                     {
-                        OnKeyPressed?.Invoke(_buttons[i].Key);
+                        ProcessKeyPress(btn.Key);
                         break;
                     }
                 }
@@ -89,40 +146,80 @@ namespace Game.Models {
             _previousMouse = currentMouse;
         }
 
+        private void ProcessKeyPress(string key)
+        {
+            if (_targetText != null)
+            {
+                if (key == "DEL")
+                {
+                    string content = _targetText.Content;
+                    if (!string.IsNullOrEmpty(content))
+                    {
+                        int cursorIdx = content.Length;
+                        if (CursorField != null)
+                        {
+                            cursorIdx = (int)CursorField.GetValue(_targetText);
+                        }
+
+                        if (cursorIdx > 0 && cursorIdx <= content.Length)
+                        {
+                            char targetChar = content[cursorIdx - 1];
+                            if (targetChar != '+' && targetChar != '=')
+                            {
+                                _targetText.Backspace();
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    _targetText.InsertText(key);
+                }
+            }
+
+            OnKeyPressed?.Invoke(key);
+        }
+
         public void Draw(SpriteBatch sb)
         {
             if (!IsActive || _pixel == null || _font == null) return;
 
+            Vector2 basePos = Transform.Position;
+            int baseX = (int)basePos.X;
+            int baseY = (int)basePos.Y;
+
             for (int i = 0; i < _buttonCount; i++)
             {
-                ref var btn = ref _buttons[i];
+                ref readonly var btn = ref _buttons[i];
 
-                sb.Draw(_pixel, btn.Bounds, ButtonColor);
+                Rectangle absBounds = btn.RelativeBounds;
+                absBounds.X += baseX;
+                absBounds.Y += baseY;
 
-                Vector2 textSize = _font.MeasureString(btn.Key);
-                Vector2 textPos = new Vector2(
-                    btn.Bounds.X + (btn.Bounds.Width - textSize.X) / 2f,
-                    btn.Bounds.Y + (btn.Bounds.Height - textSize.Y) / 2f
-                );
-
-                sb.DrawString(_font, btn.Key, textPos, TextColor);
+                sb.Draw(_pixel, absBounds, ButtonColor);
+                sb.DrawString(_font, btn.Key, basePos + btn.TextOffset, TextColor);
             }
         }
 
-        public override void OnToggled(bool val) {
-            if (val) {
+        public override void OnToggled(bool val)
+        {
+            if (val)
+            {
                 CurrentScene.Add((Engine.Specs.IUpdateable)this);
                 CurrentScene.Add((Engine.Specs.IDrawable)this);
             }
-            else {
+            else
+            {
                 CurrentScene.Remove((Engine.Specs.IUpdateable)this);
                 CurrentScene.Remove((Engine.Specs.IDrawable)this);
             }
         }
 
-        public void Dispose() {
+        public void Dispose()
+        {
             IsActive = false;
             _pixel?.Dispose();
+            _pixel = null;
         }
     }
 }

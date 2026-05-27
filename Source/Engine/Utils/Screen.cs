@@ -25,6 +25,11 @@ namespace Engine.Utils {
         public static Vector2 ScreenLeft => new Vector2(0, ScreenCenterY);
         public static Vector2 ScreenRight => new Vector2(ScreenWidth, ScreenCenterY);
 
+        public static Vector2 ScreenTopLeft => new Vector2(ScreenLeft.X, ScreenTop.Y);
+        public static Vector2 ScreenTopRight => new Vector2(ScreenRight.X, ScreenTop.Y);
+        public static Vector2 ScreenLeftDown => new Vector2(ScreenLeft.X, ScreenDown.Y);
+        public static Vector2 ScreenRightDown => new Vector2(ScreenRight.X, ScreenDown.Y);
+
         public static void Resize(int width, int height, bool isFullScreen = false) {
             if (_graphics == null) return;
 
