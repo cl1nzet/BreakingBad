@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Engine.Core;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -6,10 +7,25 @@ using Microsoft.Xna.Framework.Input;
 
 namespace Engine.Models
 {
-    // Наследуемся от Text и реализуем IUpdateable (через интерфейс IVisualComponent)
-    public sealed class InteractiveText : Text, Specs.IVisualComponent
-    {
+    public sealed class InteractiveText : Text, Specs.IVisualComponent {
+        private sealed class AnimatedChar
+        {
+            public char Character;
+            public float Alpha;
+            public bool IsTargetForDeletion;
+
+            public AnimatedChar(char character, float initialAlpha)
+            {
+                Character = character;
+                Alpha = initialAlpha;
+                IsTargetForDeletion = false;
+            }
+        }
+
         private const float _blinkCooldown = 0.5f;
+        private const float _fadeSpeed = 8f;
+
+        private readonly List<AnimatedChar> _animatedChars = new();
 
         private int _cursorIndex = 0;
         private float _cursorBlinkTimer = 0f;
@@ -18,19 +34,31 @@ namespace Engine.Models
         private bool _isFocused = true;
         private MouseState _previousMouse;
 
-        // Переопределяем свойство контента, чтобы при вводе текста сразу обновлять каретку
         public new string Content
         {
-            get => base.Content;
+            get {
+                var sb = new System.Text.StringBuilder();
+                for (int i = 0; i < _animatedChars.Count; i++)
+                {
+                    if (!_animatedChars[i].IsTargetForDeletion)
+                        sb.Append(_animatedChars[i].Character);
+                }
+                return sb.ToString();
+            }
             set
             {
-                base.Content = value;
+                _animatedChars.Clear();
+                string val = value ?? string.Empty;
+                for (int i = 0; i < val.Length; i++)
+                {
+                    _animatedChars.Add(new AnimatedChar(val[i], 1f));
+                }
+                base.Content = val;
                 ClampCursor();
                 UpdateCursorOffset();
             }
         }
 
-        // Переопределяем свойство шрифта для пересчета каретки
         public new SpriteFont Font
         {
             get => base.Font;
@@ -50,15 +78,39 @@ namespace Engine.Models
             UpdateCursorOffset();
         }
 
-        public void Update(GameTime gt)
-        {
-            if (!IsActive) return;
+        public void Update(GameTime gt) {
+            float dt = (float)gt.ElapsedGameTime.TotalSeconds;
+
+            bool listChanged = false;
+            for (int i = _animatedChars.Count - 1; i >= 0; i--)
+            {
+                var c = _animatedChars[i];
+                if (c.IsTargetForDeletion)
+                {
+                    c.Alpha -= _fadeSpeed * dt;
+                    if (c.Alpha <= 0f)
+                    {
+                        _animatedChars.RemoveAt(i);
+                        listChanged = true;
+                    }
+                }
+                else if (c.Alpha < 1f)
+                {
+                    c.Alpha += _fadeSpeed * dt;
+                    if (c.Alpha > 1f) c.Alpha = 1f;
+                }
+            }
+
+            if (listChanged) {
+                base.Content = Content;
+                UpdateCursorOffset();
+            }
 
             MouseState currentMouse = Mouse.GetState();
 
             if (_isFocused)
             {
-                _cursorBlinkTimer += (float)gt.ElapsedGameTime.TotalSeconds;
+                _cursorBlinkTimer += dt;
                 if (_cursorBlinkTimer >= _blinkCooldown)
                 {
                     _isCursorVisible = !_isCursorVisible;
@@ -78,14 +130,30 @@ namespace Engine.Models
         {
             if (Font == null || !IsActive) return;
 
-            base.Draw(sb);
+            float startX = Transform.Position.X - (Width * 0.5f);
+            float startY = Transform.Position.Y - (Height * 0.5f);
 
-            if (_isFocused && _isCursorVisible) {
-                float startX = Transform.Position.X - (Width * 0.5f);
-                float startY = Transform.Position.Y - (Height * 0.5f);
+            Vector2 currentPos = new Vector2(startX, Transform.Position.Y);
 
+            for (int i = 0; i < _animatedChars.Count; i++)
+            {
+                var c = _animatedChars[i];
+                string charStr = c.Character.ToString();
+                Vector2 charSize = Font.MeasureString(charStr);
+                Vector2 charOrigin = charSize * 0.5f;
+
+                Vector2 drawPos = currentPos + new Vector2(charSize.X * 0.5f * Transform.Scale.X, 0f);
+
+                Color charColor = Color * c.Alpha;
+
+                sb.DrawString(Font, charStr, drawPos, charColor, 0f, charOrigin, Transform.Scale, SpriteEffects.None, 0f);
+
+                currentPos.X += charSize.X * Transform.Scale.X;
+            }
+
+            if (_isFocused && _isCursorVisible)
+            {
                 Vector2 cursorPosition = new Vector2(startX + (_cursorXOffset * Transform.Scale.X), Transform.Position.Y);
-
                 Vector2 cursorSize = Font.MeasureString("|");
                 Vector2 cursorOrigin = cursorSize * 0.5f;
 
@@ -97,8 +165,14 @@ namespace Engine.Models
         {
             if (string.IsNullOrEmpty(input)) return;
 
-            Content = Content.Insert(_cursorIndex, input);
+            int realTargetIdx = GetRealIndex(_cursorIndex);
+
+            for (int i = 0; i < input.Length; i++) {
+                _animatedChars.Insert(realTargetIdx + i, new AnimatedChar(input[i], 0f));
+            }
+
             _cursorIndex += input.Length;
+            base.Content = Content;
             ResetBlink();
             UpdateCursorOffset();
         }
@@ -108,10 +182,27 @@ namespace Engine.Models
             if (_cursorIndex > 0 && Content.Length > 0)
             {
                 _cursorIndex--;
-                Content = Content.Remove(_cursorIndex, 1);
+                int realTargetIdx = GetRealIndex(_cursorIndex);
+
+                _animatedChars[realTargetIdx].IsTargetForDeletion = true;
+
                 ResetBlink();
                 UpdateCursorOffset();
             }
+        }
+
+        private int GetRealIndex(int visibleIdx)
+        {
+            int currentVisible = 0;
+            for (int i = 0; i < _animatedChars.Count; i++)
+            {
+                if (currentVisible == visibleIdx && !_animatedChars[i].IsTargetForDeletion)
+                    return i;
+
+                if (!_animatedChars[i].IsTargetForDeletion)
+                    currentVisible++;
+            }
+            return _animatedChars.Count;
         }
 
         private void HandleClick(Vector2 mousePos)
@@ -176,7 +267,8 @@ namespace Engine.Models
 
         private void ClampCursor()
         {
-            if (_cursorIndex > Content.Length) _cursorIndex = Content.Length;
+            int length = Content.Length;
+            if (_cursorIndex > length) _cursorIndex = length;
             if (_cursorIndex < 0) _cursorIndex = 0;
         }
 
@@ -186,12 +278,15 @@ namespace Engine.Models
             _cursorBlinkTimer = 0f;
         }
 
-        public override void OnToggled(bool val) {
-            if (val) {
+        public override void OnToggled(bool val)
+        {
+            if (val)
+            {
                 CurrentScene.Add((Specs.IUpdateable)this);
                 CurrentScene.Add((Specs.IDrawable)this);
             }
-            else {
+            else
+            {
                 CurrentScene.Remove((Specs.IUpdateable)this);
                 CurrentScene.Remove((Specs.IDrawable)this);
             }
