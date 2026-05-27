@@ -62,6 +62,7 @@ namespace Game.Models.Scenes {
 
             var HeaderText = new Text(
                 position: Screen.ScreenTop + new Vector2(0, 25f),
+                scale: new Vector2(2f),
                 scene: this,
                 text: "Выберите сложность:",
                 font: AssetManager.GetFont("Arial"),

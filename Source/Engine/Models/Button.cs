@@ -38,7 +38,7 @@ namespace Engine.Models
 
             if (!string.IsNullOrEmpty(text) && font != null)
             {
-                _text = new Text(Transform.Position, scene, text, font, textColor ?? Color.White);
+                _text = new Text(Transform.Position, Vector2.One, scene, text, font, textColor ?? Color.White);
             }
             UpdateBounds();
         }
@@ -47,13 +47,11 @@ namespace Engine.Models
         {
             if (_text != null) return;
 
-            _text = new Text(Transform.Position, _image.CurrentScene, text, font, color);
+            _text = new Text(Transform.Position, Vector2.One, _image.CurrentScene, text, font, color);
             CenterText();
         }
 
-        public void Update(GameTime gt)
-        {
-            if (!IsActive) return;
+        public void Update(GameTime gt) {
 
             if (Transform.Position != _lastPosition)
             {
@@ -104,10 +102,7 @@ namespace Engine.Models
             _previousMouse = _currentMouse;
         }
 
-        public void Draw(SpriteBatch sb)
-        {
-            if (!IsActive) return;
-
+        public void Draw(SpriteBatch sb) {
             _image?.Draw(sb);
             _text?.Draw(sb);
         }

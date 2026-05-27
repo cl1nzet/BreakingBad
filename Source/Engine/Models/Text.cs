@@ -39,15 +39,15 @@ namespace Engine.Models
         public float Height => MeasureString().Y * Transform.Scale.Y;
 
         public Text(Transform transform = null, Scene scene = null, string text = null, SpriteFont font = null, Color? color = null)
-            : base(transform, scene)
+            : base(transform ?? new Transform(Vector2.Zero), scene)
         {
             _text = text;
             _font = font;
             Color = color ?? Color.White;
         }
 
-        public Text(Vector2 position, Scene scene, string text, SpriteFont font, Color? color = null)
-            : base(new Transform(position), scene)
+        public Text(Vector2 position, Vector2 scale, Scene scene, string text, SpriteFont font, Color? color = null)
+            : base(new Transform(position, scale), scene)
         {
             _text = text;
             _font = font;
@@ -70,7 +70,7 @@ namespace Engine.Models
                 if (_font != null && !string.IsNullOrEmpty(_text))
                 {
                     _size = _font.MeasureString(_text);
-                    _origin = _size * 0.5f; 
+                    _origin = _size * 0.5f;
                 }
                 else
                 {
