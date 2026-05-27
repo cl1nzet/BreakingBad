@@ -33,8 +33,10 @@ namespace Game.Models.Scenes {
                 color: Color.White
             );
 
+            Vector2 stringSize = font.MeasureString("Осталось времени: 30с");
+
             _timerText = new Text(
-                position: Screen.ScreenTop,
+                position: Screen.ScreenTop - new Vector2(stringSize.X * 0.5f, 0f),
                 scene: this,
                 text: "Осталось времени: 30с",
                 font: font,
@@ -52,11 +54,11 @@ namespace Game.Models.Scenes {
             );
 
             var keyboard = new VirtualKeyboard(
-                position: new Vector2(Screen.ScreenCenterX - 700, Screen.ScreenCenterY - 300),
-                scene: this,
-                font: font,
-                text: _equationText,
-                graphicsDevice: _graphicsDevice
+            position: new Vector2(Screen.ScreenCenterX - 700, Screen.ScreenCenterY - 200),
+            scene: this,
+            font: font,
+            text: _equationText,
+            graphicsDevice: _graphicsDevice
             );
 
             exitButton.OnClick += SceneManager.LoadScene;
