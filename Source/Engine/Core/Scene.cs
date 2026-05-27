@@ -25,13 +25,9 @@ namespace Engine.Core
         public void Remove(Specs.IUpdateable updateable) => _updateablesToRemove.Add(updateable);
 
         public virtual void Draw(SpriteBatch sb) {
-            sb.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
-
             for (int i = 0; i < _drawables.Count; i++) {
                 _drawables[i].Draw(sb);
             }
-
-            sb.End();
         }
 
         public virtual void Update(GameTime gt)

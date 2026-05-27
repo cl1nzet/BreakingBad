@@ -7,7 +7,8 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 
-namespace Game.Models.Scenes {
+namespace Game.Models.Scenes
+{
     public sealed class GameScene : Scene
     {
         public override string SceneName { get; set; } = "Game";
@@ -16,35 +17,36 @@ namespace Game.Models.Scenes {
         private Text _timerText;
         private int _timerID = -1;
         private ReactionData _currentReaction;
+        private readonly float _maxTime = 30f;
 
         private GraphicsDevice _graphicsDevice;
-        public GameScene(GraphicsDevice graphicsDevice) {
+        public GameScene(GraphicsDevice graphicsDevice)
+        {
             _graphicsDevice = graphicsDevice;
         }
 
-        public override void Start() {
+        public override void Start()
+        {
             SpriteFont font = AssetManager.GetFont("Arial");
 
             _equationText = new InteractiveText(
                 position: new Vector2(Screen.ScreenCenterX - 700, Screen.ScreenCenterY - 400),
-                scale: new Vector2(2.5f, 2.5f),
+                scale: new Vector2(1.2f, 1.2f),
                 scene: this,
                 font: font,
                 color: Color.White
             );
 
-            Vector2 stringSize = font.MeasureString("Осталось времени: 30с");
-
             _timerText = new Text(
-                position: Screen.ScreenTop - new Vector2(stringSize.X * 0.5f, 0f),
+                position: new Vector2(Screen.ScreenCenterX - 700, Screen.ScreenCenterY - 350),
                 scene: this,
                 text: "Осталось времени: 30с",
                 font: font,
-                color: Color.Red
+                color: Color.Green
             );
 
             var exitButton = new Button(
-                position: Screen.ScreenRightDown - new Vector2(400f, 250f),
+                position: Screen.ScreenRightDown - new Vector2(150f, 100f),
                 scale: new Vector2(0.5f, 0.5f),
                 scene: this,
                 texture: AssetManager.GetTexture("Button"),
@@ -54,11 +56,12 @@ namespace Game.Models.Scenes {
             );
 
             var keyboard = new VirtualKeyboard(
-            position: new Vector2(Screen.ScreenCenterX - 700, Screen.ScreenCenterY - 200),
-            scene: this,
-            font: font,
-            text: _equationText,
-            graphicsDevice: _graphicsDevice
+                position: new Vector2(Screen.ScreenCenterX - 700, Screen.ScreenCenterY - 200),
+                scene: this,
+                font: font,
+                text: _equationText,
+                graphicsDevice: _graphicsDevice,
+                onVerify: VerifyEquation
             );
 
             exitButton.OnClick += SceneManager.LoadScene;
@@ -70,13 +73,34 @@ namespace Game.Models.Scenes {
         {
             base.Update(gt);
 
-            if (_timerID != -1)
-            {
+            if (_timerID != -1) {
                 float remaining = TimerManager.GetRemainingTime(_timerID);
-                if (remaining >= 0f)
-                {
+                if (remaining >= 0f) {
                     _timerText.Content = $"Осталось времени: {Math.Ceiling(remaining)}с";
+                    _timerText.Color = GetTimerColor(remaining);
                 }
+            }
+        }
+
+        private Color GetTimerColor(float remainingTime) {
+            float percentage = MathHelper.Clamp(remainingTime / _maxTime, 0f, 1f);
+
+            if (percentage > 0.5f) {
+                float t = (percentage - 0.5f) * 2f; 
+                return Color.Lerp(Color.Yellow, Color.Green, t);
+            }
+            else {
+                float t = percentage * 2f;
+                return Color.Lerp(Color.Red, Color.Yellow, t);
+            }
+        }
+
+        private void VerifyEquation(string equation)
+        {
+            bool isCorrect = ChemicalEngine.Verify(_currentReaction, equation);
+            if (isCorrect)
+            {
+                StartNewRound();
             }
         }
 
@@ -86,7 +110,7 @@ namespace Game.Models.Scenes {
 
             _equationText.Content = FormatReaction(_currentReaction);
 
-            _timerID = TimerManager.Add(30f, OnTimerExpired);
+            _timerID = TimerManager.Add(_maxTime, OnTimerExpired);
         }
 
         private void OnTimerExpired(int id)

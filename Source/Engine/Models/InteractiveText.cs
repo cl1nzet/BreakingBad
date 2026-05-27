@@ -4,12 +4,12 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
-namespace Engine.Models {
-    public sealed class InteractiveText : GameObject, Specs.IVisualComponent {
-        private string _text = string.Empty;
-        private SpriteFont _font;
-        private Vector2 _size;
-        private bool _isSizeDirty = true;
+namespace Engine.Models
+{
+    // Наследуемся от Text и реализуем IUpdateable (через интерфейс IVisualComponent)
+    public sealed class InteractiveText : Text, Specs.IVisualComponent
+    {
+        private const float _blinkCooldown = 0.5f;
 
         private int _cursorIndex = 0;
         private float _cursorBlinkTimer = 0f;
@@ -18,42 +18,35 @@ namespace Engine.Models {
         private bool _isFocused = true;
         private MouseState _previousMouse;
 
-        public string Content
+        // Переопределяем свойство контента, чтобы при вводе текста сразу обновлять каретку
+        public new string Content
         {
-            get => _text;
+            get => base.Content;
             set
             {
-                if (_text == value) return;
-                _text = value ?? string.Empty;
-                _isSizeDirty = true;
+                base.Content = value;
                 ClampCursor();
                 UpdateCursorOffset();
             }
         }
 
-        public SpriteFont Font
+        // Переопределяем свойство шрифта для пересчета каретки
+        public new SpriteFont Font
         {
-            get => _font;
+            get => base.Font;
             set
             {
-                if (_font == value) return;
-                _font = value;
-                _isSizeDirty = true;
+                base.Font = value;
                 UpdateCursorOffset();
             }
         }
 
-        public Color Color { get; set; } = Color.White;
         public Color CursorColor { get; set; } = Color.White;
-        public float Width => MeasureString().X;
-        public float Height => MeasureString().Y;
         public bool IsFocused { get => _isFocused; set => _isFocused = value; }
 
         public InteractiveText(Vector2 position, Vector2 scale, Scene scene, SpriteFont font, Color? color = null)
-            : base(new Transform(position, scale), scene)
+            : base(new Transform(position, scale), scene, string.Empty, font, color)
         {
-            _font = font;
-            Color = color ?? Color.White;
             UpdateCursorOffset();
         }
 
@@ -66,7 +59,7 @@ namespace Engine.Models {
             if (_isFocused)
             {
                 _cursorBlinkTimer += (float)gt.ElapsedGameTime.TotalSeconds;
-                if (_cursorBlinkTimer >= 0.5f)
+                if (_cursorBlinkTimer >= _blinkCooldown)
                 {
                     _isCursorVisible = !_isCursorVisible;
                     _cursorBlinkTimer = 0f;
@@ -81,19 +74,22 @@ namespace Engine.Models {
             _previousMouse = currentMouse;
         }
 
-        public void Draw(SpriteBatch sb)
+        public override void Draw(SpriteBatch sb)
         {
-            if (_font == null || !IsActive) return;
+            if (Font == null || !IsActive) return;
 
-            if (!string.IsNullOrEmpty(_text))
-            {
-                sb.DrawString(_font, _text, Transform.Position, Color);
-            }
+            base.Draw(sb);
 
-            if (_isFocused && _isCursorVisible)
-            {
-                Vector2 cursorPosition = new Vector2(Transform.Position.X + _cursorXOffset, Transform.Position.Y);
-                sb.DrawString(_font, "|", cursorPosition, CursorColor);
+            if (_isFocused && _isCursorVisible) {
+                float startX = Transform.Position.X - (Width * 0.5f);
+                float startY = Transform.Position.Y - (Height * 0.5f);
+
+                Vector2 cursorPosition = new Vector2(startX + (_cursorXOffset * Transform.Scale.X), Transform.Position.Y);
+
+                Vector2 cursorSize = Font.MeasureString("|");
+                Vector2 cursorOrigin = cursorSize * 0.5f;
+
+                sb.DrawString(Font, "|", cursorPosition, CursorColor, 0f, cursorOrigin, Transform.Scale, SpriteEffects.None, 0f);
             }
         }
 
@@ -101,20 +97,18 @@ namespace Engine.Models {
         {
             if (string.IsNullOrEmpty(input)) return;
 
-            _text = _text.Insert(_cursorIndex, input);
+            Content = Content.Insert(_cursorIndex, input);
             _cursorIndex += input.Length;
-            _isSizeDirty = true;
             ResetBlink();
             UpdateCursorOffset();
         }
 
         public void Backspace()
         {
-            if (_cursorIndex > 0 && _text.Length > 0)
+            if (_cursorIndex > 0 && Content.Length > 0)
             {
                 _cursorIndex--;
-                _text = _text.Remove(_cursorIndex, 1);
-                _isSizeDirty = true;
+                Content = Content.Remove(_cursorIndex, 1);
                 ResetBlink();
                 UpdateCursorOffset();
             }
@@ -123,9 +117,11 @@ namespace Engine.Models {
         private void HandleClick(Vector2 mousePos)
         {
             Vector2 pos = Transform.Position;
-            Vector2 size = MeasureString();
 
-            RectangleF bounds = new RectangleF(pos.X - 10f, pos.Y, size.X + 20f, size.Y + 5f);
+            float halfWidth = Width * 0.5f;
+            float halfHeight = Height * 0.5f;
+
+            RectangleF bounds = new RectangleF(pos.X - halfWidth - 10f, pos.Y - halfHeight, Width + 20f, Height + 5f);
 
             if (!bounds.Contains(mousePos))
             {
@@ -134,9 +130,11 @@ namespace Engine.Models {
             }
 
             _isFocused = true;
-            float relativeX = mousePos.X - pos.X;
 
-            if (relativeX <= 0f || _text.Length == 0)
+            float relativeX = mousePos.X - (pos.X - halfWidth);
+            relativeX /= Transform.Scale.X;
+
+            if (relativeX <= 0f || Content.Length == 0)
             {
                 _cursorIndex = 0;
                 UpdateCursorOffset();
@@ -147,10 +145,10 @@ namespace Engine.Models {
             int closestIndex = 0;
             float minDistance = float.MaxValue;
 
-            for (int i = 0; i <= _text.Length; i++)
+            for (int i = 0; i <= Content.Length; i++)
             {
-                string sub = _text.Substring(0, i);
-                float width = _font.MeasureString(sub).X;
+                string sub = Content.Substring(0, i);
+                float width = Font.MeasureString(sub).X;
                 float distance = Math.Abs(width - relativeX);
 
                 if (distance < minDistance)
@@ -167,18 +165,18 @@ namespace Engine.Models {
 
         private void UpdateCursorOffset()
         {
-            if (_font == null || _cursorIndex == 0 || string.IsNullOrEmpty(_text))
+            if (Font == null || _cursorIndex == 0 || string.IsNullOrEmpty(Content))
             {
                 _cursorXOffset = 0f;
                 return;
             }
 
-            _cursorXOffset = _font.MeasureString(_text.Substring(0, _cursorIndex)).X;
+            _cursorXOffset = Font.MeasureString(Content.Substring(0, _cursorIndex)).X;
         }
 
         private void ClampCursor()
         {
-            if (_cursorIndex > _text.Length) _cursorIndex = _text.Length;
+            if (_cursorIndex > Content.Length) _cursorIndex = Content.Length;
             if (_cursorIndex < 0) _cursorIndex = 0;
         }
 
@@ -186,16 +184,6 @@ namespace Engine.Models {
         {
             _isCursorVisible = true;
             _cursorBlinkTimer = 0f;
-        }
-
-        private Vector2 MeasureString()
-        {
-            if (_isSizeDirty)
-            {
-                _size = (_font != null && !string.IsNullOrEmpty(_text)) ? _font.MeasureString(_text) : Vector2.Zero;
-                _isSizeDirty = false;
-            }
-            return _size;
         }
 
         public override void OnToggled(bool val) {
@@ -208,7 +196,5 @@ namespace Engine.Models {
                 CurrentScene.Remove((Specs.IDrawable)this);
             }
         }
-
-        public void Dispose() => IsActive = false;
     }
 }

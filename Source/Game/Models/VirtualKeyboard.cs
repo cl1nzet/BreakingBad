@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Engine.Core;
 using Engine.Models;
@@ -13,9 +14,13 @@ namespace Game.Models
         private static readonly string[][] Layout =
         {
             new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" },
-            new[] { "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P" },
-            new[] { "A", "S", "D", "F", "G", "H", "J", "K", "L", null },
-            new[] { "Z", "X", "C", "V", "B", "N", "M", "DEL", null, null }
+            new[] { "VER", "DEL", null, null, null, null, null, null, null, null }
+        };
+
+        private static readonly Dictionary<string, float> KeyWidthMultipliers = new()
+        {
+            { "DEL", 2f },
+            { "VER", 2f }
         };
 
         private static readonly FieldInfo CursorField = typeof(InteractiveText).GetField("_cursorIndex", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -26,9 +31,11 @@ namespace Game.Models
         private MouseState _previousMouse;
         private Texture2D _pixel;
         private readonly InteractiveText _targetText;
+        private readonly Action<string> _onVerify;
 
         private Vector2 _buttonSize = new(50f, 50f);
         private Vector2 _spacing = new(5f, 5f);
+        private float _bigButtonSpacing = 15f;
 
         public Vector2 ButtonSize
         {
@@ -52,16 +59,28 @@ namespace Game.Models
             }
         }
 
+        public float BigButtonSpacing
+        {
+            get => _bigButtonSpacing;
+            set
+            {
+                if (_bigButtonSpacing == value) return;
+                _bigButtonSpacing = value;
+                BuildLayout();
+            }
+        }
+
         public Color ButtonColor { get; set; } = new(40, 40, 40);
         public Color TextColor { get; set; } = Color.White;
 
         public Action<string> OnKeyPressed;
 
-        public VirtualKeyboard(Vector2 position, Scene scene, SpriteFont font, InteractiveText text, GraphicsDevice graphicsDevice)
+        public VirtualKeyboard(Vector2 position, Scene scene, SpriteFont font, InteractiveText text, GraphicsDevice graphicsDevice, Action<string> onVerify)
             : base(new Transform(position), scene)
         {
             _font = font;
             _targetText = text;
+            _onVerify = onVerify;
 
             _pixel = new Texture2D(graphicsDevice, 1, 1);
             _pixel.SetData(new[] { Color.White });
@@ -90,21 +109,25 @@ namespace Game.Models
             float sX = _spacing.X;
             float sY = _spacing.Y;
 
-            for (int row = 0; row < Layout.Length; row++)
-            {
+            for (int row = 0; row < Layout.Length; row++) {
+                float currentX = 0f;
+
                 for (int col = 0; col < Layout[row].Length; col++)
                 {
                     string key = Layout[row][col];
-                    if (string.IsNullOrEmpty(key)) continue;
 
-                    float posX = col * (bWidth + sX);
-                    float posY = row * (bHeight + sY);
-
-                    float currentWidth = bWidth;
-                    if (key == "DEL")
-                    {
-                        currentWidth = (bWidth * 2f) + sX;
+                    if (string.IsNullOrEmpty(key)) {
+                        currentX += bWidth + sX;
+                        continue;
                     }
+
+                    bool isBigKey = KeyWidthMultipliers.TryGetValue(key, out float multiplier);
+                    if (!isBigKey) multiplier = 1f;
+
+                    float currentWidth = (bWidth * multiplier) + (sX * (multiplier - 1f));
+
+                    float posX = currentX;
+                    float posY = row * (bHeight + sY);
 
                     Rectangle relativeBounds = new((int)posX, (int)posY, (int)currentWidth, (int)bHeight);
                     Vector2 textSize = _font.MeasureString(key);
@@ -114,6 +137,9 @@ namespace Game.Models
                     );
 
                     _buttons[_buttonCount++] = new KeyboardButton(key, relativeBounds, textOffset);
+
+                    float currentSpacing = isBigKey ? _bigButtonSpacing : sX;
+                    currentX += currentWidth + currentSpacing;
                 }
             }
         }
@@ -148,9 +174,13 @@ namespace Game.Models
 
         private void ProcessKeyPress(string key)
         {
-            if (_targetText != null)
+            if (key == "VER")
             {
-                if (key == "DEL")
+                _onVerify?.Invoke(_targetText?.Content ?? string.Empty);
+            }
+            else if (key == "DEL")
+            {
+                if (_targetText != null)
                 {
                     string content = _targetText.Content;
                     if (!string.IsNullOrEmpty(content))
@@ -163,18 +193,17 @@ namespace Game.Models
 
                         if (cursorIdx > 0 && cursorIdx <= content.Length)
                         {
-                            char targetChar = content[cursorIdx - 1];
-                            if (targetChar != '+' && targetChar != '=')
+                            if (char.IsDigit(content[cursorIdx - 1]))
                             {
                                 _targetText.Backspace();
                             }
                         }
                     }
                 }
-                else
-                {
-                    _targetText.InsertText(key);
-                }
+            }
+            else
+            {
+                _targetText?.InsertText(key);
             }
 
             OnKeyPressed?.Invoke(key);

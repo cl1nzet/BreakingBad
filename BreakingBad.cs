@@ -38,19 +38,24 @@ namespace Breaking_Bad
 
             base.Initialize();
             Screen.Resize(1920, 1080, false);
+
+            LoadScenes();
         }
 
         protected override void LoadContent() {
             AssetManager.Init(Content);
+            _spriteBatch = new SpriteBatch(GraphicsDevice);
+        }
+
+        private void LoadScenes() {
             var menuScene = new MenuScene();
             var gameScene = new GameScene(GraphicsDevice);
             SceneManager.Add(menuScene);
             SceneManager.Add(gameScene);
 
             SceneManager.LoadScene();
-
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
         }
+
         protected override void Update(GameTime gameTime)
         {
             SceneManager.Update(gameTime);
@@ -65,7 +70,10 @@ namespace Breaking_Bad
                 return;
             }
             GraphicsDevice.Clear(Color.CornflowerBlue);
+
+            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
             SceneManager.Draw(_spriteBatch);
+            _spriteBatch.End();
             base.Draw(gameTime);
         }
     }
