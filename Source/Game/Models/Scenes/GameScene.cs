@@ -9,61 +9,7 @@ using System;
 
 namespace Game.Models.Scenes
 {
-    public sealed class GameScene : Scene
-    {
-        private sealed class FloatingErrorText : GameObject, Engine.Specs.IVisualComponent
-        {
-            private readonly Text _textMesh;
-            private float _alpha = 1f;
-            private const float FadeSpeed = 1.5f;
-            private const float MoveSpeed = 60f;
-
-            public FloatingErrorText(Vector2 position, Vector2 scale, Scene scene, SpriteFont font, string text = "Ошибка!") : base(new Transform(position), scene)
-            {
-                _textMesh = new Text(position, scale, scene, text, font, Color.Red);
-            }
-
-            public void Update(GameTime gt)
-            {
-                float dt = (float)gt.ElapsedGameTime.TotalSeconds;
-                _alpha -= FadeSpeed * dt;
-
-                Transform.Position += new Vector2(0, MoveSpeed * dt);
-                _textMesh.Transform.Position = Transform.Position;
-                _textMesh.Color = Color.Red * _alpha;
-
-                if (_alpha <= 0f)
-                {
-                    Dispose();
-                }
-            }
-
-            public void Draw(SpriteBatch sb)
-            {
-                _textMesh.Draw(sb);
-            }
-
-            public override void OnToggled(bool val)
-            {
-                if (val)
-                {
-                    CurrentScene.Add((Engine.Specs.IUpdateable)this);
-                    CurrentScene.Add((Engine.Specs.IDrawable)this);
-                }
-                else
-                {
-                    CurrentScene.Remove((Engine.Specs.IUpdateable)this);
-                    CurrentScene.Remove((Engine.Specs.IDrawable)this);
-                }
-            }
-
-            public void Dispose()
-            {
-                IsActive = false;
-                OnToggled(false);
-            }
-        }
-
+    public sealed class GameScene : Scene {
         public override string SceneName { get; set; } = "Game";
 
         private InteractiveText _equationText;
@@ -88,16 +34,16 @@ namespace Game.Models.Scenes
             _gameFont = AssetManager.GetFont("Arial");
 
             _equationText = new InteractiveText(
-                position: new Vector2(Screen.ScreenCenterX - 700, Screen.ScreenCenterY - 400),
-                scale: new Vector2(1.2f, 1.2f),
+                position: new Vector2(Screen.ScreenCenterX, Screen.ScreenCenterY - 400),
+                scale: Vector2.One * 1.2f,
                 scene: this,
                 font: _gameFont,
                 color: Color.White
             );
 
             _timerText = new Text(
-                position: new Vector2(Screen.ScreenCenterX - 700, Screen.ScreenCenterY - 350),
-                scale: Vector2.One,
+                position: new Vector2(Screen.ScreenCenterX, Screen.ScreenCenterY - 350),
+                scale: Vector2.One * 1.2f,
                 scene: this,
                 text: "Осталось времени: 25с/25с",
                 font: _gameFont,
@@ -124,7 +70,7 @@ namespace Game.Models.Scenes
             );
 
             var keyboard = new VirtualKeyboard(
-                position: new Vector2(Screen.ScreenCenterX - 700, Screen.ScreenCenterY - 200),
+                position: new Vector2(Screen.ScreenCenterX - 225, Screen.ScreenCenterY - 250),
                 scene: this,
                 font: _gameFont,
                 text: _equationText,
@@ -168,18 +114,16 @@ namespace Game.Models.Scenes
             }
         }
 
-        private void VerifyEquation(string equation)
-        {
+        private void VerifyEquation(string equation) {
+            Vector2 centerPosition = new Vector2(Screen.ScreenCenterX, Screen.ScreenCenterY);
             bool isCorrect = ChemicalEngine.Verify(_currentReaction, equation);
-            if (isCorrect)
-            {
+
+            if (isCorrect) {
+                var textPopup = new FloatingText(centerPosition, new Vector2(4f), this, _gameFont, Color.Green, "Правильно! (+1)");
                 StartNewRound();
             }
-            else
-            {
-                Vector2 centerPosition = new Vector2(Screen.ScreenCenterX, Screen.ScreenCenterY);
-                var errorPopup = new FloatingErrorText(centerPosition, new Vector2(3f), this, _gameFont);
-                errorPopup.OnToggled(true);
+            else {
+                var errorPopup = new FloatingText(centerPosition, new Vector2(4f), this, _gameFont, Color.Red);
             }
         }
 
