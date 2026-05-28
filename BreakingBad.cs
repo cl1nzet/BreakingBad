@@ -30,7 +30,7 @@ namespace Breaking_Bad
             TouchPanel.EnabledGestures = GestureType.Tap;
 
             Screen.Initialize(_graphics, Window);
-            Screen.SetWindowTitle(storage.Get("WinTitle", "Breaking Bad"));
+            Screen.SetWindowTitle(storage.Get("WinTitle", "ʙʀᴇᴀᴋɪɴɢ ʙᴀᴅ"));
             Window.AllowUserResizing = storage.Get("WindowResizing", false);
 
             AppQuit = Exit;
