@@ -68,11 +68,15 @@ namespace Game.Models.Scenes
 
         private InteractiveText _equationText;
         private Text _timerText;
+        private Text _solvedEquationsText;
         private SpriteFont _gameFont;
+
         private int _timerID = -1;
         private ReactionData _currentReaction;
         private static float _maxTime;
         private GraphicsDevice _graphicsDevice;
+        private const int _maxEquations = 10;
+        private int _solvedEquations = -1;
 
         public GameScene(GraphicsDevice graphicsDevice)
         {
@@ -98,6 +102,15 @@ namespace Game.Models.Scenes
                 text: "Осталось времени: 25с/25с",
                 font: _gameFont,
                 color: Color.Green
+            );
+
+            _solvedEquationsText = new Text(
+                position: Screen.ScreenTop + new Vector2(0f, 25f),
+                scale: Vector2.One * 1.2f,
+                scene: this,
+                text: $"Решено: 0/{_maxEquations} примеров",
+                font: _gameFont,
+                color: Color.LightBlue
             );
 
             var exitButton = new Button(
@@ -172,6 +185,10 @@ namespace Game.Models.Scenes
 
         private void StartNewRound()
         {
+            if(_solvedEquations >= _maxEquations - 1) {
+                SessionEnd();
+                return;
+            }
             if (_timerID != -1)
             {
                 TimerManager.Remove(_timerID);
@@ -184,6 +201,12 @@ namespace Game.Models.Scenes
             _equationText.Content = FormatReaction(_currentReaction);
 
             _timerID = TimerManager.Add(_maxTime, OnTimerExpired);
+            _solvedEquations++;
+            _solvedEquationsText.Content = $"Решено: {_solvedEquations}/{_maxEquations} примеров";
+        }
+
+        private void SessionEnd() {
+            SceneManager.LoadScene();
         }
 
         private void OnTimerExpired(int id)
