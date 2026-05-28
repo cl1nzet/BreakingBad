@@ -6,6 +6,7 @@ using Game.Core;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Threading.Tasks;
 
 namespace Game.Models.Scenes
 {
@@ -116,7 +117,7 @@ namespace Game.Models.Scenes
         }
 
         private void VerifyEquation(string equation) {
-            Vector2 centerPosition = new Vector2(Screen.ScreenCenterX, Screen.ScreenCenterY);
+            Vector2 centerPosition = Screen.ScreenCenter;
             bool isCorrect = ChemicalEngine.Verify(_currentReaction, equation);
 
             if (isCorrect) {
@@ -128,9 +129,11 @@ namespace Game.Models.Scenes
             }
         }
 
-        private void StartNewRound()
-        {
-            if(_solvedEquations >= _maxEquations - 1) {
+        private void StartNewRound() {
+            _solvedEquations++;
+            _solvedEquationsText.Content = $"Решено: {_solvedEquations}/{_maxEquations} примеров";
+
+            if (_solvedEquations >= _maxEquations - 1) {
                 SessionEnd();
                 return;
             }
@@ -140,16 +143,18 @@ namespace Game.Models.Scenes
             _currentReaction = ChemicalEngine.Generate();
 
             _equationText.Content = FormatReaction(_currentReaction);
-
+            
             _timerID = TimerManager.Add(_maxTime, OnTimerExpired);
-            _solvedEquations++;
-            _solvedEquationsText.Content = $"Решено: {_solvedEquations}/{_maxEquations} примеров";
         }
 
-        private void SessionEnd() {
+        private async Task AsyncSessionEnd() {
+            var textPopup = new FloatingText(Screen.ScreenCenter, new Vector2(4f), this, _gameFont, Color.Green, "Сессия завершена! (ожидайте 2с)");
+            _solvedEquations = -1;
+            await Task.Delay(2000);
             SceneManager.LoadScene();
         }
 
+        private void SessionEnd() => _ = AsyncSessionEnd();
         private void OnTimerExpired(int id)
         {
             if (id == _timerID)
