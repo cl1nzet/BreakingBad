@@ -18,6 +18,8 @@ namespace Game.Core
         private static readonly ReactionData[][] Pools;
         private static readonly Random Rnd = new();
 
+        private static readonly List<int>[] UnusedIndices = new List<int>[4];
+
         private readonly static Dictionary<Difficulty, float> _diffTimes = new()
         {
             { Difficulty.Easy, 25f },
@@ -41,7 +43,13 @@ namespace Game.Core
                 new ReactionData(new[] { new ChemicalComponent("C", 1), new ChemicalComponent("O2", 1) }, new[] { new ChemicalComponent("CO2", 1) }, Difficulty.Easy),
                 new ReactionData(new[] { new ChemicalComponent("Mg", 2), new ChemicalComponent("O2", 1) }, new[] { new ChemicalComponent("MgO", 2) }, Difficulty.Easy),
                 new ReactionData(new[] { new ChemicalComponent("S", 1), new ChemicalComponent("O2", 1) }, new[] { new ChemicalComponent("SO2", 1) }, Difficulty.Easy),
-                new ReactionData(new[] { new ChemicalComponent("P", 4), new ChemicalComponent("O2", 5) }, new[] { new ChemicalComponent("P2O5", 2) }, Difficulty.Easy)
+                new ReactionData(new[] { new ChemicalComponent("P", 4), new ChemicalComponent("O2", 5) }, new[] { new ChemicalComponent("P2O5", 2) }, Difficulty.Easy),
+                new ReactionData(new[] { new ChemicalComponent("Ca", 2), new ChemicalComponent("O2", 1) }, new[] { new ChemicalComponent("CaO", 2) }, Difficulty.Easy),
+                new ReactionData(new[] { new ChemicalComponent("N2", 1), new ChemicalComponent("H2", 3) }, new[] { new ChemicalComponent("NH3", 2) }, Difficulty.Easy),
+                new ReactionData(new[] { new ChemicalComponent("Fe", 2), new ChemicalComponent("Cl2", 3) }, new[] { new ChemicalComponent("FeCl3", 2) }, Difficulty.Easy),
+                new ReactionData(new[] { new ChemicalComponent("Na", 2), new ChemicalComponent("Cl2", 1) }, new[] { new ChemicalComponent("NaCl", 2) }, Difficulty.Easy),
+                new ReactionData(new[] { new ChemicalComponent("Cu", 2), new ChemicalComponent("O2", 1) }, new[] { new ChemicalComponent("CuO", 2) }, Difficulty.Easy),
+                new ReactionData(new[] { new ChemicalComponent("H2", 1), new ChemicalComponent("Cl2", 1) }, new[] { new ChemicalComponent("HCl", 2) }, Difficulty.Easy)
             };
 
             var normalDefault = new[]
@@ -50,7 +58,12 @@ namespace Game.Core
                 new ReactionData(new[] { new ChemicalComponent("Na", 2), new ChemicalComponent("H2O", 2) }, new[] { new ChemicalComponent("NaOH", 2), new ChemicalComponent("H2", 1) }, Difficulty.Normal),
                 new ReactionData(new[] { new ChemicalComponent("CH4", 1), new ChemicalComponent("O2", 2) }, new[] { new ChemicalComponent("CO2", 1), new ChemicalComponent("H2O", 2) }, Difficulty.Normal),
                 new ReactionData(new[] { new ChemicalComponent("Fe", 1), new ChemicalComponent("CuSO4", 1) }, new[] { new ChemicalComponent("FeSO4", 1), new ChemicalComponent("Cu", 1) }, Difficulty.Normal),
-                new ReactionData(new[] { new ChemicalComponent("H2O2", 2) }, new[] { new ChemicalComponent("H2O", 2), new ChemicalComponent("O2", 1) }, Difficulty.Normal)
+                new ReactionData(new[] { new ChemicalComponent("H2O2", 2) }, new[] { new ChemicalComponent("H2O", 2), new ChemicalComponent("O2", 1) }, Difficulty.Normal),
+                new ReactionData(new[] { new ChemicalComponent("Al", 2), new ChemicalComponent("O2", 3) }, new[] { new ChemicalComponent("Al2O3", 2) }, Difficulty.Normal),
+                new ReactionData(new[] { new ChemicalComponent("KClO3", 2) }, new[] { new ChemicalComponent("KCl", 2), new ChemicalComponent("O2", 3) }, Difficulty.Normal),
+                new ReactionData(new[] { new ChemicalComponent("Li", 2), new ChemicalComponent("H2O", 2) }, new[] { new ChemicalComponent("LiOH", 2), new ChemicalComponent("H2", 1) }, Difficulty.Normal),
+                new ReactionData(new[] { new ChemicalComponent("Fe", 3), new ChemicalComponent("O2", 2) }, new[] { new ChemicalComponent("Fe3O4", 1) }, Difficulty.Normal),
+                new ReactionData(new[] { new ChemicalComponent("Mg", 1), new ChemicalComponent("HCl", 2) }, new[] { new ChemicalComponent("MgCl2", 1), new ChemicalComponent("H2", 1) }, Difficulty.Normal)
             };
 
             var hardDefault = new[]
@@ -59,7 +72,12 @@ namespace Game.Core
                 new ReactionData(new[] { new ChemicalComponent("C3H8", 1), new ChemicalComponent("O2", 5) }, new[] { new ChemicalComponent("CO2", 3), new ChemicalComponent("H2O", 4) }, Difficulty.Hard),
                 new ReactionData(new[] { new ChemicalComponent("Fe(OH)3", 2) }, new[] { new ChemicalComponent("Fe2O3", 1), new ChemicalComponent("H2O", 3) }, Difficulty.Hard),
                 new ReactionData(new[] { new ChemicalComponent("BaCl2", 3), new ChemicalComponent("Al2(SO4)3", 1) }, new[] { new ChemicalComponent("BaSO4", 3), new ChemicalComponent("AlCl3", 2) }, Difficulty.Hard),
-                new ReactionData(new[] { new ChemicalComponent("NH3", 4), new ChemicalComponent("O2", 5) }, new[] { new ChemicalComponent("NO", 4), new ChemicalComponent("H2O", 6) }, Difficulty.Hard)
+                new ReactionData(new[] { new ChemicalComponent("NH3", 4), new ChemicalComponent("O2", 5) }, new[] { new ChemicalComponent("NO", 4), new ChemicalComponent("H2O", 6) }, Difficulty.Hard),
+                new ReactionData(new[] { new ChemicalComponent("C2H6", 2), new ChemicalComponent("O2", 7) }, new[] { new ChemicalComponent("CO2", 4), new ChemicalComponent("H2O", 6) }, Difficulty.Hard),
+                new ReactionData(new[] { new ChemicalComponent("NaOH", 2), new ChemicalComponent("H2SO4", 1) }, new[] { new ChemicalComponent("Na2SO4", 1), new ChemicalComponent("H2O", 2) }, Difficulty.Hard),
+                new ReactionData(new[] { new ChemicalComponent("Fe2O3", 1), new ChemicalComponent("CO", 3) }, new[] { new ChemicalComponent("Fe", 2), new ChemicalComponent("CO2", 3) }, Difficulty.Hard),
+                new ReactionData(new[] { new ChemicalComponent("Al", 2), new ChemicalComponent("NaOH", 6), new ChemicalComponent("H2O", 6) }, new[] { new ChemicalComponent("Na3(Al(OH)6)", 2), new ChemicalComponent("H2", 3) }, Difficulty.Hard),
+                new ReactionData(new[] { new ChemicalComponent("Cu(OH)2", 1) }, new[] { new ChemicalComponent("CuO", 1), new ChemicalComponent("H2O", 1) }, Difficulty.Hard)
             };
 
             var impossibleDefault = new[]
@@ -68,7 +86,12 @@ namespace Game.Core
                 new ReactionData(new[] { new ChemicalComponent("Cu", 1), new ChemicalComponent("HNO3", 4) }, new[] { new ChemicalComponent("Cu(NO3)2", 1), new ChemicalComponent("NO2", 2), new ChemicalComponent("H2O", 2) }, Difficulty.Impossible),
                 new ReactionData(new[] { new ChemicalComponent("Cu", 3), new ChemicalComponent("HNO3", 8) }, new[] { new ChemicalComponent("Cu(NO3)2", 3), new ChemicalComponent("NO", 2), new ChemicalComponent("H2O", 4) }, Difficulty.Impossible),
                 new ReactionData(new[] { new ChemicalComponent("K2Cr2O7", 1), new ChemicalComponent("HCl", 14) }, new[] { new ChemicalComponent("KCl", 2), new ChemicalComponent("CrCl3", 2), new ChemicalComponent("Cl2", 3), new ChemicalComponent("H2O", 7) }, Difficulty.Impossible),
-                new ReactionData(new[] { new ChemicalComponent("FeSO4", 10), new ChemicalComponent("KMnO4", 2), new ChemicalComponent("H2SO4", 8) }, new[] { new ChemicalComponent("Fe2(SO4)3", 5), new ChemicalComponent("MnSO4", 2), new ChemicalComponent("K2SO4", 1), new ChemicalComponent("H2O", 8) }, Difficulty.Impossible)
+                new ReactionData(new[] { new ChemicalComponent("FeSO4", 10), new ChemicalComponent("KMnO4", 2), new ChemicalComponent("H2SO4", 8) }, new[] { new ChemicalComponent("Fe2(SO4)3", 5), new ChemicalComponent("MnSO4", 2), new ChemicalComponent("K2SO4", 1), new ChemicalComponent("H2O", 8) }, Difficulty.Impossible),
+                new ReactionData(new[] { new ChemicalComponent("P", 3), new ChemicalComponent("HNO3", 5), new ChemicalComponent("H2O", 2) }, new[] { new ChemicalComponent("H3PO4", 3), new ChemicalComponent("NO", 5) }, Difficulty.Impossible),
+                new ReactionData(new[] { new ChemicalComponent("As2S3", 1), new ChemicalComponent("HNO3", 28), new ChemicalComponent("H2O", 4) }, new[] { new ChemicalComponent("H3AsO4", 2), new ChemicalComponent("H2SO4", 3), new ChemicalComponent("NO", 28) }, Difficulty.Impossible),
+                new ReactionData(new[] { new ChemicalComponent("K2Cr2O7", 1), new ChemicalComponent("H2S", 3), new ChemicalComponent("H2SO4", 4) }, new[] { new ChemicalComponent("Cr2(SO4)3", 1), new ChemicalComponent("K2SO4", 1), new ChemicalComponent("S", 3), new ChemicalComponent("H2O", 7) }, Difficulty.Impossible),
+                new ReactionData(new[] { new ChemicalComponent("KMnO4", 2), new ChemicalComponent("H2O2", 5), new ChemicalComponent("H2SO4", 3) }, new[] { new ChemicalComponent("K2SO4", 1), new ChemicalComponent("MnSO4", 2), new ChemicalComponent("O2", 5), new ChemicalComponent("H2O", 8) }, Difficulty.Impossible),
+                new ReactionData(new[] { new ChemicalComponent("Cr2O3", 1), new ChemicalComponent("KNO3", 3), new ChemicalComponent("Na2CO3", 2) }, new[] { new ChemicalComponent("Na2CrO4", 2), new ChemicalComponent("KNO2", 3), new ChemicalComponent("CO2", 2) }, Difficulty.Impossible)
             };
 
             Pools = new[] { easyDefault, normalDefault, hardDefault, impossibleDefault };
@@ -95,6 +118,32 @@ namespace Game.Core
                 if (isDirty) storage.Save();
             }
             catch { }
+
+            for (int i = 0; i < Pools.Length; i++)
+            {
+                UnusedIndices[i] = new List<int>(10);
+                ResetAndShufflePool(i);
+            }
+        }
+
+        private static void ResetAndShufflePool(int poolIdx)
+        {
+            var list = UnusedIndices[poolIdx];
+            list.Clear();
+
+            int count = Pools[poolIdx].Length;
+            for (int i = 0; i < count; i++)
+            {
+                list.Add(i);
+            }
+
+            for (int i = count - 1; i > 0; i--)
+            {
+                int j = Rnd.Next(i + 1);
+                int temp = list[i];
+                list[i] = list[j];
+                list[j] = temp;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -104,10 +153,19 @@ namespace Game.Core
         {
             int idx = (int)difficulty;
             if (idx < 0 || idx >= Pools.Length) return Pools[0][0];
+
             var pool = Pools[idx];
-            lock (Rnd)
-            {
-                return pool[Rnd.Next(pool.Length)];
+            if (pool.Length == 0) return Pools[0][0];
+
+            lock (Rnd) {
+                if (UnusedIndices[idx].Count == 0) {
+                    ResetAndShufflePool(idx);
+                }
+
+                int nextReactionIdx = UnusedIndices[idx][0];
+                UnusedIndices[idx].RemoveAt(0);
+
+                return pool[nextReactionIdx];
             }
         }
 
@@ -116,7 +174,8 @@ namespace Game.Core
 
         public static float GetDifficultyMaxTime(Difficulty difficulty) => _diffTimes[difficulty];
 
-        public static bool Verify(in ReactionData reaction, string input) {
+        public static bool Verify(in ReactionData reaction, string input)
+        {
             if (string.IsNullOrWhiteSpace(input)) return false;
 
             int rLen = reaction.Reactants.Length;
@@ -402,7 +461,9 @@ namespace Game.Core
                             {
                                 if (tokens[t].GroupLevel == currentLevel)
                                 {
-                                    tokens[t].Count *= mult;
+                                    {
+                                        tokens[t].Count *= mult;
+                                    }
                                 }
                             }
                             groupPtr = g;
