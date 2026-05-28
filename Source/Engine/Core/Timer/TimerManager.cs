@@ -33,6 +33,30 @@ namespace Engine.Core.Timer {
             return id;
         }
 
+        public static bool Remove(int id)
+        {
+            if (id <= 0 || id > _idCounter) return false;
+
+            int index = _idToStructureIndex[id];
+
+            if (index >= _activeCount || _timers[index].Id != id) {
+                return false;
+            }
+
+            int lastIndex = _activeCount - 1;
+            if (index != lastIndex) {
+                _timers[index] = _timers[lastIndex];
+                _callbacks[index] = _callbacks[lastIndex];
+
+                _idToStructureIndex[_timers[index].Id] = index;
+            }
+
+            _callbacks[lastIndex] = null;
+
+            _activeCount--;
+            return true;
+        }
+
         public static void Update(GameTime gt) {
             if (_timers.Length == 0) return;
             float dt = (float)gt.ElapsedGameTime.TotalSeconds;

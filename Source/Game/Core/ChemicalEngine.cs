@@ -116,8 +116,7 @@ namespace Game.Core
 
         public static float GetDifficultyMaxTime(Difficulty difficulty) => _diffTimes[difficulty];
 
-        public static bool Verify(in ReactionData reaction, string input)
-        {
+        public static bool Verify(in ReactionData reaction, string input) {
             if (string.IsNullOrWhiteSpace(input)) return false;
 
             int rLen = reaction.Reactants.Length;
@@ -126,22 +125,35 @@ namespace Game.Core
 
             Span<int> values = stackalloc int[totalLen];
             int count = 0;
-            int start = 0;
 
             ReadOnlySpan<char> inputSpan = input.AsSpan();
 
-            for (int i = 0; i <= inputSpan.Length; i++)
+            for (int i = 0; i < inputSpan.Length; i++)
             {
-                if (i == inputSpan.Length || char.IsWhiteSpace(inputSpan[i]))
+                if (inputSpan[i] == '[')
                 {
-                    if (i > start)
+                    int start = i + 1;
+
+                    while (i < inputSpan.Length && inputSpan[i] != ']')
                     {
-                        if (count >= totalLen || !int.TryParse(inputSpan.Slice(start, i - start), out values[count++]))
+                        i++;
+                    }
+
+                    if (i < inputSpan.Length && inputSpan[i] == ']')
+                    {
+                        var token = inputSpan.Slice(start, i - start);
+
+                        if (count >= totalLen) return false;
+
+                        if (token.IsWhiteSpace())
+                        {
+                            values[count++] = 1;
+                        }
+                        else if (!int.TryParse(token, out values[count++]))
                         {
                             return false;
                         }
                     }
-                    start = i + 1;
                 }
             }
 

@@ -9,7 +9,8 @@ using System;
 
 namespace Game.Models.Scenes
 {
-    public sealed class GameScene : Scene {
+    public sealed class GameScene : Scene
+    {
         private sealed class FloatingErrorText : GameObject, Engine.Specs.IVisualComponent
         {
             private readonly Text _textMesh;
@@ -17,19 +18,18 @@ namespace Game.Models.Scenes
             private const float FadeSpeed = 1.5f;
             private const float MoveSpeed = 60f;
 
-            public FloatingErrorText(Vector2 position, Vector2 scale, Scene scene, SpriteFont font, string text = "Ошибка!") : base(new Transform(position), scene) {
+            public FloatingErrorText(Vector2 position, Vector2 scale, Scene scene, SpriteFont font, string text = "Ошибка!") : base(new Transform(position), scene)
+            {
                 _textMesh = new Text(position, scale, scene, text, font, Color.Red);
             }
 
-            public void Update(GameTime gt) {
-
+            public void Update(GameTime gt)
+            {
                 float dt = (float)gt.ElapsedGameTime.TotalSeconds;
-
                 _alpha -= FadeSpeed * dt;
 
                 Transform.Position += new Vector2(0, MoveSpeed * dt);
                 _textMesh.Transform.Position = Transform.Position;
-
                 _textMesh.Color = Color.Red * _alpha;
 
                 if (_alpha <= 0f)
@@ -38,12 +38,15 @@ namespace Game.Models.Scenes
                 }
             }
 
-            public void Draw(SpriteBatch sb) {
+            public void Draw(SpriteBatch sb)
+            {
                 _textMesh.Draw(sb);
             }
 
-            public override void OnToggled(bool val) {
-                if (val) {
+            public override void OnToggled(bool val)
+            {
+                if (val)
+                {
                     CurrentScene.Add((Engine.Specs.IUpdateable)this);
                     CurrentScene.Add((Engine.Specs.IDrawable)this);
                 }
@@ -54,7 +57,8 @@ namespace Game.Models.Scenes
                 }
             }
 
-            public void Dispose() {
+            public void Dispose()
+            {
                 IsActive = false;
                 OnToggled(false);
             }
@@ -67,15 +71,16 @@ namespace Game.Models.Scenes
         private SpriteFont _gameFont;
         private int _timerID = -1;
         private ReactionData _currentReaction;
-
         private static float _maxTime;
-
         private GraphicsDevice _graphicsDevice;
-        public GameScene(GraphicsDevice graphicsDevice) {
+
+        public GameScene(GraphicsDevice graphicsDevice)
+        {
             _graphicsDevice = graphicsDevice;
         }
 
-        public override void Start() {
+        public override void Start()
+        {
             _gameFont = AssetManager.GetFont("Arial");
 
             _equationText = new InteractiveText(
@@ -119,19 +124,23 @@ namespace Game.Models.Scenes
             StartNewRound();
         }
 
-        public override void Update(GameTime gt) {
+        public override void Update(GameTime gt)
+        {
             base.Update(gt);
 
-            if (_timerID != -1) {
+            if (_timerID != -1)
+            {
                 float remaining = TimerManager.GetRemainingTime(_timerID);
-                if (remaining >= 0f) {
+                if (remaining >= 0f)
+                {
                     _timerText.Content = $"Осталось времени: {Math.Ceiling(remaining)}с/{_maxTime}с ";
                     _timerText.Color = GetTimerColor(remaining);
                 }
             }
         }
 
-        private Color GetTimerColor(float remainingTime) {
+        private Color GetTimerColor(float remainingTime)
+        {
             float percentage = MathHelper.Clamp(remainingTime / _maxTime, 0f, 1f);
 
             if (percentage > 0.5f)
@@ -146,19 +155,29 @@ namespace Game.Models.Scenes
             }
         }
 
-        private void VerifyEquation(string equation) {
+        private void VerifyEquation(string equation)
+        {
             bool isCorrect = ChemicalEngine.Verify(_currentReaction, equation);
-            if (isCorrect) {
+            if (isCorrect)
+            {
                 StartNewRound();
             }
-            else {
+            else
+            {
                 Vector2 centerPosition = new Vector2(Screen.ScreenCenterX, Screen.ScreenCenterY);
                 var errorPopup = new FloatingErrorText(centerPosition, new Vector2(3f), this, _gameFont);
-                errorPopup.OnToggled(true); 
+                errorPopup.OnToggled(true);
             }
         }
 
-        private void StartNewRound() {
+        private void StartNewRound()
+        {
+            if (_timerID != -1)
+            {
+                TimerManager.Remove(_timerID);
+                _timerID = -1;
+            }
+
             _maxTime = ChemicalEngine.GetDifficultyMaxTime();
             _currentReaction = ChemicalEngine.Generate();
 
@@ -167,18 +186,21 @@ namespace Game.Models.Scenes
             _timerID = TimerManager.Add(_maxTime, OnTimerExpired);
         }
 
-        private void OnTimerExpired(int id) {
+        private void OnTimerExpired(int id)
+        {
             if (id == _timerID)
             {
                 StartNewRound();
             }
         }
 
-        private string FormatReaction(in ReactionData reaction) {
+        private string FormatReaction(in ReactionData reaction)
+        {
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
 
             for (int i = 0; i < reaction.Reactants.Length; i++)
             {
+                sb.Append("[]");
                 sb.Append(reaction.Reactants[i].Formula);
                 if (i < reaction.Reactants.Length - 1) sb.Append(" + ");
             }
@@ -187,6 +209,7 @@ namespace Game.Models.Scenes
 
             for (int i = 0; i < reaction.Products.Length; i++)
             {
+                sb.Append("[]");
                 sb.Append(reaction.Products[i].Formula);
                 if (i < reaction.Products.Length - 1) sb.Append(" + ");
             }
