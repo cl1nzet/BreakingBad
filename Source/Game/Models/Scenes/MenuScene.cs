@@ -37,6 +37,7 @@ namespace Game.Models.Scenes {
             );
 
             PlayButton.OnClick += () => SceneManager.LoadScene("Difficulty");
+            SettingsButton.OnClick += () => SceneManager.LoadScene("Settings");
             ExitButton.OnClick += BreakingBad.AppQuit.Invoke;
         }
     }

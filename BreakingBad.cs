@@ -48,9 +48,11 @@ namespace Breaking_Bad
 
         private void LoadScenes() {
             var menuScene = new MenuScene();
+            var settingsScene = new SettingsScene();
             var difficultyScene = new DifficultyScene();
             var gameScene = new GameScene(GraphicsDevice);
             SceneManager.Add(menuScene);
+            SceneManager.Add(settingsScene);
             SceneManager.Add(difficultyScene);
             SceneManager.Add(gameScene);
 
