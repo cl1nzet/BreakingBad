@@ -66,9 +66,20 @@ namespace Game.Models.Scenes {
                 scene: this,
                 text: "Выберите сложность:",
                 font: AssetManager.GetFont("Arial"),
-                color: Color.White
+                color: Color.LightYellow
             );
 
+            var exitButton = new Button(
+                position: Screen.ScreenRightDown - new Vector2(150f, 100f),
+                scale: new Vector2(0.5f, 0.5f),
+                scene: this,
+                texture: AssetManager.GetTexture("Button"),
+                text: "Обратно",
+                font: AssetManager.GetFont("Arial"),
+                textColor: Color.Black
+            );
+
+            exitButton.OnClick += SceneManager.LoadScene;
             EasyDifficultyButton.OnClick += () => SetDiff(Difficulty.Easy);
             NormalDifficultyButton.OnClick += () => SetDiff(Difficulty.Normal);
             HardDifficultyButton.OnClick += () => SetDiff(Difficulty.Hard);

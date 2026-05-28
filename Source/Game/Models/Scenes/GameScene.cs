@@ -75,7 +75,8 @@ namespace Game.Models.Scenes
                 font: _gameFont,
                 text: _equationText,
                 graphicsDevice: _graphicsDevice,
-                onVerify: VerifyEquation
+                onVerify: VerifyEquation,
+                onSkip: StartNewRound
             );
 
             exitButton.OnClick += SceneManager.LoadScene;
@@ -133,11 +134,7 @@ namespace Game.Models.Scenes
                 SessionEnd();
                 return;
             }
-            if (_timerID != -1)
-            {
-                TimerManager.Remove(_timerID);
-                _timerID = -1;
-            }
+            ResetTimer();
 
             _maxTime = ChemicalEngine.GetDifficultyMaxTime();
             _currentReaction = ChemicalEngine.Generate();
@@ -160,7 +157,13 @@ namespace Game.Models.Scenes
                 StartNewRound();
             }
         }
-
+        private void ResetTimer() {
+            if (_timerID != -1)
+            {
+                TimerManager.Remove(_timerID);
+                _timerID = -1;
+            }
+        }
         private string FormatReaction(in ReactionData reaction)
         {
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
@@ -182,6 +185,12 @@ namespace Game.Models.Scenes
             }
 
             return sb.ToString();
+        }
+
+        public override void Unload() {
+            base.Unload();
+            ResetTimer();
+            _solvedEquations = 0;
         }
     }
 }

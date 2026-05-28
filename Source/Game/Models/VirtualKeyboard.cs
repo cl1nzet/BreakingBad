@@ -14,13 +14,13 @@ namespace Game.Models
         private static readonly string[][] Layout =
         {
             new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" },
-            new[] { "VER", "DEL", null, null, null, null, null, null, null, null }
+            new[] { "*", "->", null, null, null, null, null, "DEL", null, null}
         };
 
         private static readonly Dictionary<string, float> KeyWidthMultipliers = new()
         {
             { "DEL", 2f },
-            { "VER", 2f }
+            { "->", 1.5f }
         };
 
         private static readonly FieldInfo CursorField = typeof(InteractiveText).GetField("_cursorIndex", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -32,6 +32,7 @@ namespace Game.Models
         private Texture2D _pixel;
         private readonly InteractiveText _targetText;
         private readonly Action<string> _onVerify;
+        private readonly Action _onSkip;
 
         private Vector2 _buttonSize = new(50f, 50f);
         private Vector2 _spacing = new(5f, 5f);
@@ -75,12 +76,13 @@ namespace Game.Models
 
         public Action<string> OnKeyPressed;
 
-        public VirtualKeyboard(Vector2 position, Scene scene, SpriteFont font, InteractiveText text, GraphicsDevice graphicsDevice, Action<string> onVerify)
+        public VirtualKeyboard(Vector2 position, Scene scene, SpriteFont font, InteractiveText text, GraphicsDevice graphicsDevice, Action<string> onVerify, Action onSkip)
             : base(new Transform(position), scene)
         {
             _font = font;
             _targetText = text;
             _onVerify = onVerify;
+            _onSkip = onSkip;
 
             _pixel = new Texture2D(graphicsDevice, 1, 1);
             _pixel.SetData(new[] { Color.White });
@@ -144,9 +146,7 @@ namespace Game.Models
             }
         }
 
-        public void Update(GameTime gt)
-        {
-            if (!IsActive) return;
+        public void Update(GameTime gt) {
 
             MouseState currentMouse = Mouse.GetState();
 
@@ -174,12 +174,13 @@ namespace Game.Models
 
         private void ProcessKeyPress(string key)
         {
-            if (key == "VER")
-            {
+            if (key == "*") {
                 _onVerify?.Invoke(_targetText?.Content ?? string.Empty);
             }
-            else if (key == "DEL")
-            {
+            else if (key == "->") {
+                _onSkip?.Invoke();
+            }
+            else if (key == "DEL") {
                 if (_targetText != null)
                 {
                     string content = _targetText.Content;
@@ -209,9 +210,8 @@ namespace Game.Models
             OnKeyPressed?.Invoke(key);
         }
 
-        public void Draw(SpriteBatch sb)
-        {
-            if (!IsActive || _pixel == null || _font == null) return;
+        public void Draw(SpriteBatch sb) {
+            if (_pixel == null || _font == null) return;
 
             Vector2 basePos = Transform.Position;
             int baseX = (int)basePos.X;
