@@ -220,6 +220,7 @@ namespace Game.Models.Scenes
             ResetTimer();
             _solvedEquations = -1;
             _correctSolvedEquations = 0;
+            _skipAttemps = 0;
         }
     }
 }
