@@ -13,7 +13,7 @@ namespace Engine.Models {
         }
         public Transform Transform;
         public Scene CurrentScene { get; init; }
-        public GameObject(Transform transform, Scene scene) {
+        public GameObject(Transform transform, Scene? scene = null) {
             Transform = transform;
             CurrentScene = scene;
 

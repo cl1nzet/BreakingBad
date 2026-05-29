@@ -2,6 +2,7 @@
 using Engine.Models;
 using Engine.Utils;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace Game.Models.Scenes {
     public sealed class SettingsScene : Scene {
@@ -17,7 +18,7 @@ namespace Game.Models.Scenes {
                 textColor: Color.Black
             );
 
-            exitButton.OnClick += SceneManager.LoadScene;
+            exitButton.OnClick += () => SceneManager.LoadScene(0);
         }
     }
 }

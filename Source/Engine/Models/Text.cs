@@ -84,8 +84,8 @@ namespace Engine.Models
 
         public override void OnToggled(bool val)
         {
-            if (val) CurrentScene.Add(this);
-            else CurrentScene.Remove(this);
+            if (val) CurrentScene?.Add(this);
+            else CurrentScene?.Remove(this);
         }
 
         public void Dispose() => IsActive = false;

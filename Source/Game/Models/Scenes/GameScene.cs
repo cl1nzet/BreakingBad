@@ -80,7 +80,7 @@ namespace Game.Models.Scenes
                 onSkip: StartNewRound
             );
 
-            exitButton.OnClick += SceneManager.LoadScene;
+            exitButton.OnClick += () => SceneManager.LoadScene(0);
 
             StartNewRound();
         }

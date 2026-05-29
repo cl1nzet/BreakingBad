@@ -1,5 +1,6 @@
 ﻿using Engine.Core;
 using Engine.Core.Timer;
+using Engine.Models;
 using Engine.Utils;
 using Game.Models.Scenes;
 using Game.Utils;
@@ -17,6 +18,7 @@ namespace Breaking_Bad
         private SpriteBatch _spriteBatch;
         private static Storage storage;
         public static Action AppQuit;
+        private Image _background;
         public BreakingBad()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -38,6 +40,14 @@ namespace Breaking_Bad
             base.Initialize();
             Screen.Resize(1920, 1080, false);
 
+            Texture2D backgroundTexture = AssetManager.GetTexture("Background");
+
+            _background = new Image(
+                position: Screen.ScreenCenter,
+                texture: backgroundTexture,
+                scale: new Vector2((float)Screen.ScreenWidth / backgroundTexture.Width, (float)Screen.ScreenHeight / backgroundTexture.Height)
+            );
+
             LoadScenes();
         }
 
@@ -56,7 +66,7 @@ namespace Breaking_Bad
             SceneManager.Add(difficultyScene);
             SceneManager.Add(gameScene);
 
-            SceneManager.LoadScene();
+            SceneManager.LoadScene(0, 0);
         }
 
         protected override void Update(GameTime gameTime)
@@ -75,6 +85,7 @@ namespace Breaking_Bad
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
+            _background.Draw(_spriteBatch);
             SceneManager.Draw(_spriteBatch);
             _spriteBatch.End();
             base.Draw(gameTime);

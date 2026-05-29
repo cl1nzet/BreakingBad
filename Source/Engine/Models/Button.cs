@@ -129,13 +129,13 @@ namespace Engine.Models
         {
             if (val)
             {
-                CurrentScene.Add((Specs.IUpdateable)this);
-                CurrentScene.Add((Specs.IDrawable)this);
+                CurrentScene?.Add((Specs.IUpdateable)this);
+                CurrentScene?.Add((Specs.IDrawable)this);
             }
             else
             {
-                CurrentScene.Remove((Specs.IUpdateable)this);
-                CurrentScene.Remove((Specs.IDrawable)this);
+                CurrentScene?.Remove((Specs.IUpdateable)this);
+                CurrentScene?.Remove((Specs.IDrawable)this);
             }
         }
 

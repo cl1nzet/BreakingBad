@@ -34,6 +34,7 @@ namespace Engine.Models {
         public Image(Transform transform = null, Scene scene = null, Texture2D texture = null, Color? color = null) : base(transform, scene) {
             _texture = texture;
             _color = color ?? Color.White;
+
             Initialize();
         }
 
@@ -59,8 +60,8 @@ namespace Engine.Models {
         public void Dispose() => IsActive = false;
 
         public override void OnToggled(bool val) {
-            if (val) { CurrentScene.Add(this); }
-            else { CurrentScene.Remove(this); }
+            if (val) { CurrentScene?.Add(this); }
+            else { CurrentScene?.Remove(this); }
         }
     }
 }

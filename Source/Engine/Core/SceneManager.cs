@@ -32,16 +32,16 @@ namespace Engine.Core {
             CurrentScene.Start();
         }
 
-        public static void LoadScene() => _ = LoadSceneAsync(0);
+        public static void LoadScene(int delay = 100) => _ = LoadSceneAsync(0, delay);
 
-        public static async Task LoadSceneAsync(int index)
+        public static async Task LoadSceneAsync(int index, int delay = 100)
         {
             if (index < 0 || index >= _scenes.Length) return;
 
-            await LoadSceneAsync(_scenes[index]);
+            await LoadSceneAsync(_scenes[index], delay);
         }
 
-        public static async Task LoadSceneAsync(string name)
+        public static async Task LoadSceneAsync(string name, int delay = 100)
         {
             for (int i = 0; i < _scenes.Length; i++)
             {
@@ -53,8 +53,8 @@ namespace Engine.Core {
             }
         }
 
-        public static void LoadScene(int index) => _ = LoadSceneAsync(index);
-        public static void LoadScene(string name) => _ = LoadSceneAsync(name);
+        public static void LoadScene(int index, int delay = 100) => _ = LoadSceneAsync(index, delay);
+        public static void LoadScene(string name, int delay = 100) => _ = LoadSceneAsync(name, delay);
 
         public static void Start() => CurrentScene?.Start();
         public static void Update(GameTime gt) => CurrentScene?.Update(gt);

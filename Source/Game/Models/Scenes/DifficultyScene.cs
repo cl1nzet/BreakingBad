@@ -79,7 +79,7 @@ namespace Game.Models.Scenes {
                 textColor: Color.Black
             );
 
-            exitButton.OnClick += SceneManager.LoadScene;
+            exitButton.OnClick += () => SceneManager.LoadScene(0);
             EasyDifficultyButton.OnClick += () => SetDiff(Difficulty.Easy);
             NormalDifficultyButton.OnClick += () => SetDiff(Difficulty.Normal);
             HardDifficultyButton.OnClick += () => SetDiff(Difficulty.Hard);
