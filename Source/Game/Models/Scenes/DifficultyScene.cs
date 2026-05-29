@@ -19,6 +19,7 @@ namespace Game.Models.Scenes {
             float totalHeight = (buttonHeight * totalButtons) + (spacing * (totalButtons - 1));
 
             float startY = Screen.ScreenCenterY - (totalHeight * 0.5f) + (buttonHeight * 0.5f);
+            Outline outline = new Outline(Color.Black, 0.4f);
 
             var EasyDifficultyButton = new Button(
                 position: new Vector2(Screen.ScreenCenterX, startY),
@@ -68,6 +69,7 @@ namespace Game.Models.Scenes {
                 font: AssetManager.GetFont("Arial"),
                 color: Color.LightYellow
             );
+            HeaderText.AddOutline(outline);
 
             var exitButton = new Button(
                 position: Screen.ScreenRightDown - new Vector2(150f, 100f),

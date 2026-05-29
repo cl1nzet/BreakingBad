@@ -47,7 +47,6 @@ namespace Breaking_Bad
                 texture: backgroundTexture,
                 scale: new Vector2((float)Screen.ScreenWidth / backgroundTexture.Width, (float)Screen.ScreenHeight / backgroundTexture.Height)
             );
-
             LoadScenes();
         }
 
@@ -77,17 +76,20 @@ namespace Breaking_Bad
             base.Update(gameTime);
         }
 
-        protected override void Draw(GameTime gameTime)
-        {
-            if (!IsActive) {
-                return;
-            }
+        protected override void Draw(GameTime gameTime) {
+            if (!IsActive) return;
+
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
-            _background.Draw(_spriteBatch);
+
+            if (!(SceneManager.CurrentScene is GameScene)) {
+                _background.Draw(_spriteBatch);
+            }
+
             SceneManager.Draw(_spriteBatch);
             _spriteBatch.End();
+
             base.Draw(gameTime);
         }
     }

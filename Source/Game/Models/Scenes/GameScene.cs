@@ -33,6 +33,7 @@ namespace Game.Models.Scenes
         public override void Start()
         {
             _gameFont = AssetManager.GetFont("Arial");
+            Outline outline = new Outline(Color.Black, 0.4f);
 
             _equationText = new InteractiveText(
                 position: new Vector2(Screen.ScreenCenterX, Screen.ScreenCenterY - 400),
@@ -41,15 +42,16 @@ namespace Game.Models.Scenes
                 font: _gameFont,
                 color: Color.White
             );
-
+            _equationText.AddOutline(outline);
             _timerText = new Text(
-                position: new Vector2(Screen.ScreenCenterX, Screen.ScreenCenterY - 350),
+                position: new Vector2(Screen.ScreenCenterX, Screen.ScreenCenterY - 325),
                 scale: Vector2.One * 1.2f,
                 scene: this,
                 text: "Осталось времени: 25с/25с",
                 font: _gameFont,
                 color: Color.Green
             );
+            _timerText.AddOutline(outline);
 
             _solvedEquationsText = new Text(
                 position: Screen.ScreenTop + new Vector2(0f, 25f),
@@ -59,6 +61,7 @@ namespace Game.Models.Scenes
                 font: _gameFont,
                 color: Color.LightBlue
             );
+            _solvedEquationsText.AddOutline(outline);
 
             var exitButton = new Button(
                 position: Screen.ScreenRightDown - new Vector2(150f, 100f),
