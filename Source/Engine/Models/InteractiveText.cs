@@ -7,7 +7,8 @@ using Microsoft.Xna.Framework.Input;
 
 namespace Engine.Models
 {
-    public sealed class InteractiveText : Text, Specs.IVisualComponent {
+    public sealed class InteractiveText : Text, Specs.IVisualComponent
+    {
         private sealed class AnimatedChar
         {
             public char Character;
@@ -24,19 +25,24 @@ namespace Engine.Models
 
         private const float _blinkCooldown = 0.5f;
         private const float _fadeSpeed = 8f;
+        private const float _cursorSmoothSpeed = 22f; // Скорость доводки курсора (чем выше, тем быстрее)
 
         private readonly List<AnimatedChar> _animatedChars = new();
 
         private int _cursorIndex = 0;
         private float _cursorBlinkTimer = 0f;
         private bool _isCursorVisible = true;
-        private float _cursorXOffset = 0f;
+
+        private float _cursorXOffset = 0f;       // Текущая отрендеренная позиция курсора
+        private float _targetCursorXOffset = 0f; // Целевая позиция, куда курсор стремится
+
         private bool _isFocused = true;
         private MouseState _previousMouse;
 
         public new string Content
         {
-            get {
+            get
+            {
                 var sb = new System.Text.StringBuilder();
                 for (int i = 0; i < _animatedChars.Count; i++)
                 {
@@ -55,7 +61,7 @@ namespace Engine.Models
                 }
                 base.Content = val;
                 ClampCursor();
-                UpdateCursorOffset();
+                UpdateCursorOffset(snap: true); // При полной смене текста мгновенно перемещаем курсор
             }
         }
 
@@ -65,7 +71,7 @@ namespace Engine.Models
             set
             {
                 base.Font = value;
-                UpdateCursorOffset();
+                UpdateCursorOffset(snap: true);
             }
         }
 
@@ -75,11 +81,22 @@ namespace Engine.Models
         public InteractiveText(Vector2 position, Vector2 scale, Scene scene, SpriteFont font, Color? color = null)
             : base(new Transform(position, scale), scene, string.Empty, font, color)
         {
-            UpdateCursorOffset();
+            UpdateCursorOffset(snap: true);
         }
 
-        public void Update(GameTime gt) {
+        public void Update(GameTime gt)
+        {
             float dt = (float)gt.ElapsedGameTime.TotalSeconds;
+
+            if (_cursorXOffset != _targetCursorXOffset)
+            {
+                _cursorXOffset = MathHelper.Lerp(_cursorXOffset, _targetCursorXOffset, _cursorSmoothSpeed * dt);
+
+                if (Math.Abs(_cursorXOffset - _targetCursorXOffset) < 0.2f)
+                {
+                    _cursorXOffset = _targetCursorXOffset;
+                }
+            }
 
             bool listChanged = false;
             for (int i = _animatedChars.Count - 1; i >= 0; i--)
@@ -101,7 +118,8 @@ namespace Engine.Models
                 }
             }
 
-            if (listChanged) {
+            if (listChanged)
+            {
                 base.Content = Content;
                 UpdateCursorOffset();
             }
@@ -128,7 +146,7 @@ namespace Engine.Models
 
         public override void Draw(SpriteBatch sb)
         {
-            if (Font == null || !IsActive) return;
+            if (Font == null) return;
 
             float startX = Transform.Position.X - (Width * 0.5f);
             float startY = Transform.Position.Y - (Height * 0.5f);
@@ -161,7 +179,8 @@ namespace Engine.Models
             }
         }
 
-        public void InsertText(string input) {
+        public void InsertText(string input)
+        {
             if (string.IsNullOrEmpty(input)) return;
 
             int realTargetIdx = GetRealIndex(_cursorIndex);
@@ -177,7 +196,8 @@ namespace Engine.Models
             UpdateCursorOffset();
         }
 
-        public void MoveToNextBracket() {
+        public void MoveToNextBracket()
+        {
             string content = Content;
             int nextOpenIdx = -1;
 
@@ -205,20 +225,24 @@ namespace Engine.Models
             }
         }
 
-        public void MoveToPreviousBracket() {
+        public void MoveToPreviousBracket()
+        {
             string content = Content;
             List<int> openIndices = new List<int>();
 
-            for (int i = 0; i < content.Length; i++) {
+            for (int i = 0; i < content.Length; i++)
+            {
                 if (content[i] == '[') openIndices.Add(i);
             }
 
             if (openIndices.Count == 0) return;
 
             int currentBracketIdx = -1;
-            for (int i = 0; i < openIndices.Count; i++) {
+            for (int i = 0; i < openIndices.Count; i++)
+            {
                 int closeIdx = content.IndexOf(']', openIndices[i]);
-                if (closeIdx != -1 && closeIdx >= _cursorIndex) {
+                if (closeIdx != -1 && closeIdx >= _cursorIndex)
+                {
                     currentBracketIdx = i;
                     break;
                 }
@@ -226,9 +250,11 @@ namespace Engine.Models
 
             int targetBracketIdx = currentBracketIdx == -1 ? openIndices.Count - 1 : currentBracketIdx - 1;
 
-            if (targetBracketIdx >= 0) {
+            if (targetBracketIdx >= 0)
+            {
                 int closeIdx = content.IndexOf(']', openIndices[targetBracketIdx]);
-                if (closeIdx != -1) {
+                if (closeIdx != -1)
+                {
                     _cursorIndex = closeIdx;
                     ResetBlink();
                     UpdateCursorOffset();
@@ -236,8 +262,10 @@ namespace Engine.Models
             }
         }
 
-        public void Backspace() {   
-            if (_cursorIndex > 0 && Content.Length > 0) {
+        public void Backspace()
+        {
+            if (_cursorIndex > 0 && Content.Length > 0)
+            {
                 _cursorIndex--;
                 int realTargetIdx = GetRealIndex(_cursorIndex);
 
@@ -310,15 +338,25 @@ namespace Engine.Models
             ResetBlink();
         }
 
-        private void UpdateCursorOffset()
+        private void UpdateCursorOffset(bool snap = false)
         {
             if (Font == null || _cursorIndex == 0 || string.IsNullOrEmpty(Content))
             {
-                _cursorXOffset = 0f;
-                return;
+                _targetCursorXOffset = 0f;
+            }
+            else
+            {
+                _targetCursorXOffset = Font.MeasureString(Content.Substring(0, _cursorIndex)).X;
             }
 
-            _cursorXOffset = Font.MeasureString(Content.Substring(0, _cursorIndex)).X;
+            if (snap)
+            {
+                _cursorXOffset = _targetCursorXOffset;
+            }
+            else
+            {
+                ResetBlink();
+            }
         }
 
         private void ClampCursor()
