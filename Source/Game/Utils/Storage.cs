@@ -10,7 +10,7 @@ namespace Game.Utils {
         private string _backupPath;
         private readonly Dictionary<string, JsonElement> _rawCache = new(StringComparer.Ordinal);
         private readonly Dictionary<string, object> _typedCache = new(StringComparer.Ordinal);
-        private readonly ReaderWriterLockSlim _lock = new();
+        private readonly ReaderWriterLockSlim _lock = new(LockRecursionPolicy.SupportsRecursion);
         private bool _isDirty;
         private bool _isInitialized;
 
@@ -19,7 +19,7 @@ namespace Game.Utils {
             try
             {
                 if (_isInitialized) return;
-                _filePath = Path.GetFullPath(filePath);
+                _filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filePath);
                 _backupPath = _filePath + ".bak";
                 _isInitialized = true;
                 LoadInternal();
@@ -63,7 +63,22 @@ namespace Game.Utils {
                     }
                 }
 
-                return defaultValue;
+                _lock.EnterWriteLock();
+                try
+                {
+                    if (_typedCache.TryGetValue(key, out typedValue))
+                    {
+                        return (T)typedValue;
+                    }
+
+                    _typedCache[key] = defaultValue;
+                    _isDirty = true;
+                    return defaultValue;
+                }
+                finally
+                {
+                    _lock.ExitWriteLock();
+                }
             }
             finally
             {

@@ -1,4 +1,5 @@
 ﻿using Engine.Specs;
+using Engine.Utils;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Media;
@@ -6,9 +7,7 @@ using System;
 using System.Collections.Generic;
 
 namespace Engine.Core {
-    public sealed class AudioService : IAudioService, IDisposable
-    {
-        private readonly ContentManager _content;
+    public sealed class AudioService : IDisposable {
         private readonly Dictionary<int, SoundEffect> _sounds;
         private readonly Dictionary<int, Queue<SoundEffectInstance>> _soundPools;
         private readonly Dictionary<int, Song> _music;
@@ -16,6 +15,7 @@ namespace Engine.Core {
         private float _masterVolume = 1f;
         private float _sfxVolume = 1f;
         private float _musicVolume = 1f;
+        private int _currentMusicId = -1;
         private bool _isDisposed;
 
         public float MasterVolume
@@ -44,10 +44,7 @@ namespace Engine.Core {
             }
         }
 
-        public AudioService(ContentManager content, int initialCapacity = 64)
-        {
-            _content = content ?? throw new ArgumentNullException(nameof(content));
-
+        public AudioService(int initialCapacity = 64) {
             _sounds = new Dictionary<int, SoundEffect>(initialCapacity);
             _soundPools = new Dictionary<int, Queue<SoundEffectInstance>>(initialCapacity);
             _music = new Dictionary<int, Song>(initialCapacity);
@@ -63,7 +60,7 @@ namespace Engine.Core {
             if (_sounds.ContainsKey(hash))
                 return;
 
-            var effect = _content.Load<SoundEffect>(assetName);
+            var effect = AssetManager.GetSound(assetName);
             _sounds.Add(hash, effect);
 
             if (poolSize > 0)
@@ -83,7 +80,7 @@ namespace Engine.Core {
 
             if (!_music.ContainsKey(hash))
             {
-                _music.Add(hash, _content.Load<Song>(assetName));
+                _music.Add(hash, AssetManager.GetMusic(assetName));
             }
         }
 
@@ -126,16 +123,28 @@ namespace Engine.Core {
             return null;
         }
 
-        public void PlayMusic(int id, bool loop = true)
-        {
+        public void PlayMusic(int id, bool loop = true) {
+            if (_currentMusicId == id && MediaPlayer.State == MediaState.Playing)
+                return;
+
             if (_music.TryGetValue(id, out Song song))
             {
                 MediaPlayer.IsRepeating = loop;
                 MediaPlayer.Play(song);
+                _currentMusicId = id;
             }
         }
 
-        public void StopMusic() => MediaPlayer.Stop();
+        public void PlayMusic(string assetName, bool loop = true)
+        {
+            int id = AudioHash.Get(assetName);
+            PlayMusic(id, loop);
+        }
+
+        public void StopMusic() {
+            MediaPlayer.Stop();
+            _currentMusicId = -1;
+        }
         public void PauseMusic() => MediaPlayer.Pause();
         public void ResumeMusic() => MediaPlayer.Resume();
 

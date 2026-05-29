@@ -44,3 +44,9 @@
 /processorParam:TextureFormat=Color
 /build:Button.png
 
+#begin MenuTheme.ogg
+/importer:OggImporter
+/processor:SongProcessor
+/processorParam:Quality=Best
+/build:MenuTheme.ogg
+

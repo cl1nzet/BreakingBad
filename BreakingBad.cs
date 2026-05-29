@@ -8,7 +8,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input.Touch;
 using System;
-using System.IO;
 
 namespace Breaking_Bad
 {
@@ -19,6 +18,7 @@ namespace Breaking_Bad
         private static Storage storage;
         public static Action AppQuit;
         private Image _background;
+        private AudioService _audio;
         public BreakingBad()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -29,6 +29,7 @@ namespace Breaking_Bad
         protected override void Initialize() {
             storage = new Storage();
             storage.Initialize("config.json");
+            storage.Save();
             TouchPanel.EnabledGestures = GestureType.Tap;
 
             Screen.Initialize(_graphics, Window);
@@ -52,10 +53,15 @@ namespace Breaking_Bad
 
         protected override void LoadContent() {
             AssetManager.Init(Content);
+            _audio = new AudioService(2);
+            _audio.LoadMusic("MenuTheme");
+            _audio.MasterVolume = 0.2f;
             _spriteBatch = new SpriteBatch(GraphicsDevice);
         }
 
         private void LoadScenes() {
+            SceneManager.OnSceneChanged += PlaybackTheme;
+
             var menuScene = new MenuScene();
             var settingsScene = new SettingsScene();
             var difficultyScene = new DifficultyScene();
@@ -91,6 +97,14 @@ namespace Breaking_Bad
             _spriteBatch.End();
 
             base.Draw(gameTime);
+        }
+
+        private void PlaybackTheme(Scene scene) {
+            if (scene is GameScene) {
+                _audio.StopMusic();
+                return;
+            }
+            _audio.PlayMusic("MenuTheme");
         }
     }
 }

@@ -21,35 +21,6 @@ namespace Game.Core {
         static ChemicalEngine() {
             var defaultPools = ReactionDatabase.GetPredefinedPools();
             PoolManager = new ReactionPoolManager(defaultPools);
-
-            try
-            {
-                Storage storage = new Storage();
-                storage.Initialize("reactions.json");
-
-                bool isDirty = false;
-                string[] difficulties = { "Easy", "Normal", "Hard", "Impossible" };
-
-                for (int i = 0; i < difficulties.Length; i++)
-                {
-                    var saved = storage.Get<ReactionData[]>(difficulties[i]);
-                    if (saved != null && saved.Length > 0)
-                    {
-                        PoolManager.OverwritePool(i, saved);
-                    }
-                    else
-                    {
-                        storage.Set(difficulties[i], defaultPools[i]);
-                        isDirty = true;
-                    }
-                }
-
-                if (isDirty) storage.Save();
-            }
-            catch
-            {
-                
-            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
