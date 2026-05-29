@@ -19,10 +19,12 @@ namespace Game.Models.Scenes
         private SpriteFont _gameFont;
 
         private int _timerID = -1;
+        private int _skipAttemps = 0;
         private ReactionData _currentReaction;
         private static float _maxTime;
         private GraphicsDevice _graphicsDevice;
         private const int _maxEquations = 10;
+        private const int _maxSkipAttemps = 3;
         private int _solvedEquations = -1;
         private int _correctSolvedEquations = 0;
 
@@ -141,7 +143,13 @@ namespace Game.Models.Scenes
         }
 
         private void SkipRound() {
-            var textPopup = new FloatingText(Screen.ScreenCenter, new Vector2(4f), this, _gameFont, Color.Gray, "Пропущено (->)");
+            FloatingText textPopup;
+            if (_skipAttemps >= _maxSkipAttemps) {
+                textPopup = new FloatingText(Screen.ScreenCenter, new Vector2(4f), this, _gameFont, Color.Red, "Все попытки утрачены! (X)");
+                return;
+            }
+            _skipAttemps++;
+            textPopup = new FloatingText(Screen.ScreenCenter, new Vector2(4f), this, _gameFont, Color.Gray, "Пропущено (->)");
             StartNewRound();
         }
 
@@ -173,7 +181,8 @@ namespace Game.Models.Scenes
         private void OnTimerExpired(int id)
         {
             if (id == _timerID) {
-                SkipRound();
+                var textPopup = new FloatingText(Screen.ScreenCenter, new Vector2(4f), this, _gameFont, Color.Gray, "Пропущено (->)");
+                StartNewRound();
             }
         }
         private void ResetTimer() {
