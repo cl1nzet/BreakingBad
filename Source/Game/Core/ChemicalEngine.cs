@@ -22,10 +22,10 @@ namespace Game.Core
 
         private readonly static Dictionary<Difficulty, float> _diffTimes = new()
         {
-            { Difficulty.Easy, 25f },
-            { Difficulty.Normal, 20f },
-            { Difficulty.Hard, 15f },
-            { Difficulty.Impossible, 10f }
+            { Difficulty.Easy, 20f },
+            { Difficulty.Normal, 25f },
+            { Difficulty.Hard, 30f },
+            { Difficulty.Impossible, 45f }
         };
 
         private static Difficulty _currentDifficulty;
