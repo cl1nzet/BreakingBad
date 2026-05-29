@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Game.Models.Scenes {
     public sealed class MenuScene : Scene {
+        private const string AuthorName = "cl1nzet";
         public override string SceneName { get; set; } = "Menu";
         public override void Start() {
             Texture2D buttonTexture = AssetManager.GetTexture("Button");
@@ -39,6 +40,15 @@ namespace Game.Models.Scenes {
                 font: textFont,
                 textColor: Color.Black
             );
+            var AuthorText = new Text(
+                position: Screen.ScreenRightDown - new Vector2(100, 65),
+                scale: Vector2.One * 1.4f,
+                scene: this,
+                text: $"by {AuthorName}",
+                font: textFont,
+                color: Color.Red
+            );
+            AuthorText.AddOutline(new Outline(Color.Black, 0.4f));
 
             PlayButton.OnClick += () => SceneManager.LoadScene("Difficulty");
             SettingsButton.OnClick += () => SceneManager.LoadScene("Settings", 0);
