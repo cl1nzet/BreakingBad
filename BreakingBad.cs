@@ -28,18 +28,25 @@ namespace Breaking_Bad
 
         protected override void Initialize() {
             storage = new Storage();
-            storage.Initialize("config.json");
-            storage.Save();
+            storage.onFileCreated += SetDefaults;
+            storage.Initialize("config.txt");
+
             TouchPanel.EnabledGestures = GestureType.Tap;
 
             Screen.Initialize(_graphics, Window);
+
             Screen.SetWindowTitle(storage.Get("WinTitle", "ʙʀᴇᴀᴋɪɴɢ ʙᴀᴅ"));
             Window.AllowUserResizing = storage.Get("WindowResizing", false);
 
             AppQuit = Exit;
 
             base.Initialize();
-            Screen.Resize(1920, 1080, false);
+
+            Screen.Resize(
+                storage.Get("ScreenWidth", 1920),
+                storage.Get("ScreenHeight", 1080),
+                storage.Get("FullScreen", false)
+            );
 
             Texture2D backgroundTexture = AssetManager.GetTexture("Background");
 
@@ -51,11 +58,20 @@ namespace Breaking_Bad
             LoadScenes();
         }
 
+        private void SetDefaults() {
+            storage.Set("WinTitle", "ʙʀᴇᴀᴋɪɴɢ ʙᴀᴅ");
+            storage.Set("ScreenWidth", "1920");
+            storage.Set("ScreenHeight", "1080");
+            storage.Set("FullScreen", "false");
+            storage.Set("WindowResizing", "false");
+            storage.Save();
+        }
+
         protected override void LoadContent() {
             AssetManager.Init(Content);
             _audio = new AudioService(2);
             _audio.LoadMusic("MenuTheme");
-            _audio.MasterVolume = 0.2f;
+            _audio.MasterVolume = 0.1f;
             _spriteBatch = new SpriteBatch(GraphicsDevice);
         }
 

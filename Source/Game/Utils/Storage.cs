@@ -1,231 +1,157 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
-using System.Text.Json;
-using System.Threading;
+using Microsoft.Xna.Framework.Input;
 
-namespace Game.Utils {
-    public sealed class Storage {
-        private string _filePath;
-        private string _backupPath;
-        private readonly Dictionary<string, JsonElement> _rawCache = new(StringComparer.Ordinal);
-        private readonly Dictionary<string, object> _typedCache = new(StringComparer.Ordinal);
-        private readonly ReaderWriterLockSlim _lock = new(LockRecursionPolicy.SupportsRecursion);
-        private bool _isDirty;
-        private bool _isInitialized;
+namespace Game.Utils
+{
+    public sealed class Storage
+    {
+        private string _configPath;
+        private readonly Dictionary<string, string> _stringSettings = new(32, StringComparer.Ordinal);
+        private readonly Dictionary<string, object> _typedCache = new(32, StringComparer.Ordinal);
+        private readonly object _lock = new();
 
-        public void Initialize(string filePath) {
-            _lock.EnterWriteLock();
-            try
+        public event Action onFileCreated;
+
+        public void Initialize(string path)
+        {
+            _configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
+            lock (_lock)
             {
-                if (_isInitialized) return;
-                _filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filePath);
-                _backupPath = _filePath + ".bak";
-                _isInitialized = true;
-                LoadInternal();
-            }
-            finally
-            {
-                _lock.ExitWriteLock();
+                if (File.Exists(_configPath))
+                {
+                    LoadInternal();
+                }
+                else
+                {
+                    SaveInternal();
+                    onFileCreated?.Invoke();
+                }
             }
         }
 
         public T Get<T>(string key, T defaultValue = default)
         {
-            if (!_isInitialized) throw new InvalidOperationException("System is not initialized. Call Initialize() first.");
-
-            _lock.EnterUpgradeableReadLock();
-            try
+            lock (_lock)
             {
-                if (_typedCache.TryGetValue(key, out var typedValue))
+                if (_typedCache.TryGetValue(key, out var cachedValue))
                 {
-                    return (T)typedValue;
+                    return (T)cachedValue;
                 }
 
-                if (_rawCache.TryGetValue(key, out var jsonElement))
+                if (!_stringSettings.TryGetValue(key, out var stringValue))
                 {
-                    _lock.EnterWriteLock();
-                    try
-                    {
-                        if (_typedCache.TryGetValue(key, out typedValue))
-                        {
-                            return (T)typedValue;
-                        }
-
-                        T deserialized = JsonSerializer.Deserialize<T>(jsonElement);
-                        _typedCache[key] = deserialized;
-                        _rawCache.Remove(key);
-                        return deserialized;
-                    }
-                    finally
-                    {
-                        _lock.ExitWriteLock();
-                    }
-                }
-
-                _lock.EnterWriteLock();
-                try
-                {
-                    if (_typedCache.TryGetValue(key, out typedValue))
-                    {
-                        return (T)typedValue;
-                    }
-
                     _typedCache[key] = defaultValue;
-                    _isDirty = true;
+                    _stringSettings[key] = defaultValue?.ToString() ?? string.Empty;
                     return defaultValue;
                 }
-                finally
-                {
-                    _lock.ExitWriteLock();
-                }
-            }
-            finally
-            {
-                _lock.ExitUpgradeableReadLock();
+
+                T parsedValue = ParseValue<T>(stringValue);
+                _typedCache[key] = parsedValue;
+                return parsedValue;
             }
         }
 
-        public void Set<T>(string key, T value)
+        public void Set(string key, string value)
         {
-            if (!_isInitialized) throw new InvalidOperationException("System is not initialized. Call Initialize() first.");
-
-            _lock.EnterWriteLock();
-            try
+            lock (_lock)
             {
-                if (_typedCache.TryGetValue(key, out var existing) && EqualityComparer<T>.Default.Equals((T)existing, value))
-                {
-                    return;
-                }
-
-                _typedCache[key] = value;
-                _rawCache.Remove(key);
-                _isDirty = true;
-            }
-            finally
-            {
-                _lock.ExitWriteLock();
+                _stringSettings[key] = value;
+                _typedCache.Remove(key);
             }
         }
 
-        public void Load() {
-            if (!_isInitialized) throw new InvalidOperationException("System is not initialized. Call Initialize() first.");
-
-            _lock.EnterWriteLock();
-            try
+        public void Load()
+        {
+            lock (_lock)
             {
                 LoadInternal();
             }
-            finally
-            {
-                _lock.ExitWriteLock();
-            }
         }
 
-        private void LoadInternal() {
-            _rawCache.Clear();
-            _typedCache.Clear();
-            _isDirty = false;
-
-            if (!File.Exists(_filePath))
-            {
-                if (File.Exists(_backupPath))
-                {
-                    File.Copy(_backupPath, _filePath, true);
-                }
-                else
-                {
-                    return;
-                }
-            }
-
-            try
-            {
-                ReadFromFile(_filePath);
-            }
-            catch
-            {
-                try
-                {
-                    if (File.Exists(_backupPath))
-                    {
-                        ReadFromFile(_backupPath);
-                    }
-                }
-                catch
-                {
-                    _rawCache.Clear();
-                    _typedCache.Clear();
-                }
-            }
-        }
-
-        private void ReadFromFile(string path)
+        private void LoadInternal()
         {
-            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 8192, FileOptions.SequentialScan);
-            if (stream.Length == 0) return;
+            _stringSettings.Clear();
+            _typedCache.Clear();
 
-            using var document = JsonDocument.Parse(stream);
-            foreach (var property in document.RootElement.EnumerateObject())
+            string content = File.ReadAllText(_configPath);
+            ReadOnlySpan<char> textSpan = content.AsSpan();
+
+            int position = 0;
+            while (position < textSpan.Length)
             {
-                _rawCache[property.Name] = property.Value.Clone();
+                int nextNewLine = textSpan[position..].IndexOf('\n');
+                ReadOnlySpan<char> line = nextNewLine == -1
+                    ? textSpan[position..]
+                    : textSpan[position..(position + nextNewLine)];
+
+                position += nextNewLine == -1 ? textSpan.Length : nextNewLine + 1;
+
+                if (line.IsWhiteSpace()) continue;
+
+                int separator = line.IndexOf('=');
+                if (separator <= 0) continue;
+
+                ReadOnlySpan<char> keySpan = line[..separator].Trim();
+                ReadOnlySpan<char> valueSpan = line[(separator + 1)..].Trim();
+
+                if (keySpan.IsEmpty || valueSpan.IsEmpty) continue;
+
+                _stringSettings[keySpan.ToString()] = valueSpan.ToString();
             }
         }
 
         public void Save()
         {
-            if (!_isInitialized) throw new InvalidOperationException("System is not initialized. Call Initialize() first.");
-
-            _lock.EnterWriteLock();
-            try
+            lock (_lock)
             {
-                if (!_isDirty) return;
-
-                var directory = Path.GetDirectoryName(_filePath);
-                if (directory != null && !Directory.Exists(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
-
-                string tempPath = _filePath + ".tmp";
-
-                using (var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, FileOptions.WriteThrough))
-                using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = false }))
-                {
-                    writer.WriteStartObject();
-
-                    foreach (var kvp in _rawCache)
-                    {
-                        writer.WritePropertyName(kvp.Key);
-                        kvp.Value.WriteTo(writer);
-                    }
-
-                    foreach (var kvp in _typedCache)
-                    {
-                        writer.WritePropertyName(kvp.Key);
-                        JsonSerializer.Serialize(writer, kvp.Value);
-                    }
-
-                    writer.WriteEndObject();
-                    writer.Flush();
-                }
-
-                if (File.Exists(_filePath))
-                {
-                    File.Replace(tempPath, _filePath, _backupPath);
-                }
-                else
-                {
-                    if (File.Exists(_backupPath)) File.Delete(_backupPath);
-                    File.Move(tempPath, _filePath);
-                }
-
-                _isDirty = false;
+                SaveInternal();
             }
-            finally
+        }
+
+        private void SaveInternal()
+        {
+            string tempPath = _configPath + ".tmp";
+
+            using (var writer = new StreamWriter(tempPath, false, System.Text.Encoding.UTF8, 4096))
             {
-                _lock.ExitWriteLock();
+                foreach (var kvp in _stringSettings)
+                {
+                    writer.Write(kvp.Key);
+                    writer.Write('=');
+                    writer.WriteLine(kvp.Value);
+                }
             }
+
+            if (File.Exists(_configPath))
+            {
+                File.Replace(tempPath, _configPath, null);
+            }
+            else
+            {
+                File.Move(tempPath, _configPath);
+            }
+        }
+
+        private static T ParseValue<T>(string value)
+        {
+            Type type = typeof(T);
+
+            if (type == typeof(int))
+                return (T)(object)int.Parse(value, CultureInfo.InvariantCulture);
+
+            if (type == typeof(float))
+                return (T)(object)float.Parse(value, CultureInfo.InvariantCulture);
+
+            if (type == typeof(bool))
+                return (T)(object)bool.Parse(value);
+
+            if (type == typeof(Keys))
+                return (T)Enum.Parse(typeof(Keys), value);
+
+            return (T)(object)value;
         }
     }
 }
