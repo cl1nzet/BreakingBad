@@ -24,6 +24,7 @@ namespace Game.Models.Scenes
         private GraphicsDevice _graphicsDevice;
         private const int _maxEquations = 10;
         private int _solvedEquations = -1;
+        private int _correctSolvedEquations = 0;
 
         public GameScene(GraphicsDevice graphicsDevice)
         {
@@ -80,7 +81,7 @@ namespace Game.Models.Scenes
                 text: _equationText,
                 graphicsDevice: _graphicsDevice,
                 onVerify: VerifyEquation,
-                onSkip: StartNewRound
+                onSkip: SkipRound
             );
 
             exitButton.OnClick += () => SceneManager.LoadScene(0);
@@ -124,24 +125,35 @@ namespace Game.Models.Scenes
             bool isCorrect = ChemicalEngine.Verify(_currentReaction, equation);
 
             if (isCorrect) {
+                _correctSolvedEquations++;
+
+                if (_solvedEquations >= _maxEquations - 1) {
+                    SessionEnd();
+                    return;
+                }
+
                 var textPopup = new FloatingText(centerPosition, new Vector2(4f), this, _gameFont, Color.Green, "Правильно! (+1)");
                 StartNewRound();
             }
             else {
-                var errorPopup = new FloatingText(centerPosition, new Vector2(4f), this, _gameFont, Color.Red);
+                var errorPopup = new FloatingText(centerPosition, new Vector2(4f), this, _gameFont, Color.Red, "Ошибка! (X)");
             }
+        }
+
+        private void SkipRound() {
+            var textPopup = new FloatingText(Screen.ScreenCenter, new Vector2(4f), this, _gameFont, Color.Gray, "Пропущено (->)");
+            StartNewRound();
         }
 
         private void StartNewRound() {
             _solvedEquations++;
             _solvedEquationsText.Content = $"Решено: {_solvedEquations}/{_maxEquations} примеров";
+            ResetTimer();
 
-            if (_solvedEquations >= _maxEquations - 1) {
+            if (_solvedEquations >= _maxEquations) {
                 SessionEnd();
                 return;
             }
-            ResetTimer();
-
             _maxTime = ChemicalEngine.GetDifficultyMaxTime();
             _currentReaction = ChemicalEngine.Generate();
 
@@ -198,7 +210,8 @@ namespace Game.Models.Scenes
         public override void Unload() {
             base.Unload();
             ResetTimer();
-            _solvedEquations = 0;
+            _solvedEquations = -1;
+            _correctSolvedEquations = 0;
         }
     }
 }

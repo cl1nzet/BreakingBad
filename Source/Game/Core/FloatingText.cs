@@ -11,7 +11,7 @@ namespace Game.Core {
         private const float FadeSpeed = 1.5f;
         private const float MoveSpeed = 60f;
 
-        public FloatingText(Vector2 position, Vector2 scale, Scene scene, SpriteFont font, Color color, string text = "Ошибка!") : base(new Transform(position), scene) {
+        public FloatingText(Vector2 position, Vector2 scale, Scene scene, SpriteFont font, Color color, string text) : base(new Transform(position), scene) {
             _textMesh = new Text(position, scale, scene, text, font, color);
             _color = color;
         }
