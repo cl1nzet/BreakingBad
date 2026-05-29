@@ -14,7 +14,7 @@ namespace Game.Models
         private static readonly string[][] Layout =
         {
             new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" },
-            new[] { "*", "->", null, null, null, null, null, "DEL", null, null}
+            new[] { "*", "->", null, null, "<", ">", null, "DEL", null, null}
         };
 
         private static readonly Dictionary<string, float> KeyWidthMultipliers = new()
@@ -174,13 +174,24 @@ namespace Game.Models
 
         private void ProcessKeyPress(string key)
         {
-            if (key == "*") {
+            if (key == "*")
+            {
                 _onVerify?.Invoke(_targetText?.Content ?? string.Empty);
             }
-            else if (key == "->") {
+            else if (key == "->")
+            {
                 _onSkip?.Invoke();
             }
-            else if (key == "DEL") {
+            else if (key == "<")
+            {
+                _targetText?.MoveToPreviousBracket();
+            }
+            else if (key == ">")
+            {
+                _targetText?.MoveToNextBracket();
+            }
+            else if (key == "DEL")
+            {
                 if (_targetText != null)
                 {
                     string content = _targetText.Content;

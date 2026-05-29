@@ -161,13 +161,13 @@ namespace Engine.Models
             }
         }
 
-        public void InsertText(string input)
-        {
+        public void InsertText(string input) {
             if (string.IsNullOrEmpty(input)) return;
 
             int realTargetIdx = GetRealIndex(_cursorIndex);
 
-            for (int i = 0; i < input.Length; i++) {
+            for (int i = 0; i < input.Length; i++)
+            {
                 _animatedChars.Insert(realTargetIdx + i, new AnimatedChar(input[i], 0f));
             }
 
@@ -177,10 +177,67 @@ namespace Engine.Models
             UpdateCursorOffset();
         }
 
-        public void Backspace()
-        {
-            if (_cursorIndex > 0 && Content.Length > 0)
+        public void MoveToNextBracket() {
+            string content = Content;
+            int nextOpenIdx = -1;
+
+            for (int i = 0; i < content.Length; i++)
             {
+                if (content[i] == '[')
+                {
+                    if (i >= _cursorIndex)
+                    {
+                        nextOpenIdx = i;
+                        break;
+                    }
+                }
+            }
+
+            if (nextOpenIdx != -1)
+            {
+                int closeIdx = content.IndexOf(']', nextOpenIdx);
+                if (closeIdx != -1)
+                {
+                    _cursorIndex = closeIdx;
+                    ResetBlink();
+                    UpdateCursorOffset();
+                }
+            }
+        }
+
+        public void MoveToPreviousBracket() {
+            string content = Content;
+            List<int> openIndices = new List<int>();
+
+            for (int i = 0; i < content.Length; i++) {
+                if (content[i] == '[') openIndices.Add(i);
+            }
+
+            if (openIndices.Count == 0) return;
+
+            int currentBracketIdx = -1;
+            for (int i = 0; i < openIndices.Count; i++) {
+                int closeIdx = content.IndexOf(']', openIndices[i]);
+                if (closeIdx != -1 && closeIdx >= _cursorIndex) {
+                    currentBracketIdx = i;
+                    break;
+                }
+            }
+
+            int targetBracketIdx = currentBracketIdx == -1 ? openIndices.Count - 1 : currentBracketIdx - 1;
+
+            if (targetBracketIdx >= 0) {
+                int closeIdx = content.IndexOf(']', openIndices[targetBracketIdx]);
+                if (closeIdx != -1) {
+                    _cursorIndex = closeIdx;
+                    ResetBlink();
+                    UpdateCursorOffset();
+                }
+            }
+        }
+
+        public void Backspace() {   
+            if (_cursorIndex > 0 && Content.Length > 0) {
                 _cursorIndex--;
                 int realTargetIdx = GetRealIndex(_cursorIndex);
 
@@ -216,7 +273,6 @@ namespace Engine.Models
 
             if (!bounds.Contains(mousePos))
             {
-                _isFocused = false;
                 return;
             }
 
