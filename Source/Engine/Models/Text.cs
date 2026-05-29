@@ -2,32 +2,27 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace Engine.Models
-{
-    public class Text : GameObject, Specs.IDrawable
-    {
+namespace Engine.Models {
+    public class Text : GameObject, Specs.IDrawable {
         private string _text;
         private SpriteFont _font;
         private Vector2 _size;
         private Vector2 _origin;
+        private Outline _outline;
         private bool _isSizeDirty = true;
 
-        public string Content
-        {
+        public string Content {
             get => _text;
-            set
-            {
+            set {
                 if (_text == value) return;
                 _text = value;
                 _isSizeDirty = true;
             }
         }
 
-        public SpriteFont Font
-        {
+        public SpriteFont Font {
             get => _font;
-            set
-            {
+            set {
                 if (_font == value) return;
                 _font = value;
                 _isSizeDirty = true;
@@ -39,41 +34,41 @@ namespace Engine.Models
         public float Height => MeasureString().Y * Transform.Scale.Y;
 
         public Text(Transform transform = null, Scene scene = null, string text = null, SpriteFont font = null, Color? color = null)
-            : base(transform ?? new Transform(Vector2.Zero), scene)
-        {
+            : base(transform ?? new Transform(Vector2.Zero), scene) {
             _text = text;
             _font = font;
             Color = color ?? Color.White;
         }
 
         public Text(Vector2 position, Vector2 scale, Scene scene, string text, SpriteFont font, Color? color = null)
-            : base(new Transform(position, scale), scene)
-        {
+            : base(new Transform(position, scale), scene) {
             _text = text;
             _font = font;
             Color = color ?? Color.White;
         }
 
-        public virtual void Draw(SpriteBatch sb)
-        {
+        public virtual void Draw(SpriteBatch sb) {
             if (_font == null || string.IsNullOrEmpty(_text) || !IsActive) return;
 
             MeasureString();
 
-            sb.DrawString(_font, _text, Transform.Position, Color, 0f, _origin, Transform.Scale, SpriteEffects.None, 0f);
+            Vector2 position = Transform.Position;
+            Vector2 scale = Transform.Scale;
+
+            _outline?.Draw(sb, _font, _text, position, _origin, scale);
+
+            sb.DrawString(_font, _text, position, Color, 0f, _origin, scale, SpriteEffects.None, 0f);
         }
 
-        private Vector2 MeasureString()
-        {
-            if (_isSizeDirty)
-            {
-                if (_font != null && !string.IsNullOrEmpty(_text))
-                {
+        public void AddOutline(Outline outline) => _outline = outline;
+
+        private Vector2 MeasureString() {
+            if (_isSizeDirty) {
+                if (_font != null && !string.IsNullOrEmpty(_text)) {
                     _size = _font.MeasureString(_text);
                     _origin = _size * 0.5f;
                 }
-                else
-                {
+                else {
                     _size = Vector2.Zero;
                     _origin = Vector2.Zero;
                 }
@@ -82,8 +77,7 @@ namespace Engine.Models
             return _size;
         }
 
-        public override void OnToggled(bool val)
-        {
+        public override void OnToggled(bool val) {
             if (val) CurrentScene?.Add(this);
             else CurrentScene?.Remove(this);
         }
