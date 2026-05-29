@@ -147,7 +147,7 @@ namespace Game.Models.Scenes
 
         private void StartNewRound() {
             _solvedEquations++;
-            _solvedEquationsText.Content = $"Решено: {_solvedEquations}/{_maxEquations} примеров";
+            _solvedEquationsText.Content = $"Решено: {_solvedEquations}/{_maxEquations} примеров ({_correctSolvedEquations})";
             ResetTimer();
 
             if (_solvedEquations >= _maxEquations) {
@@ -172,9 +172,8 @@ namespace Game.Models.Scenes
         private void SessionEnd() => _ = AsyncSessionEnd();
         private void OnTimerExpired(int id)
         {
-            if (id == _timerID)
-            {
-                StartNewRound();
+            if (id == _timerID) {
+                SkipRound();
             }
         }
         private void ResetTimer() {
