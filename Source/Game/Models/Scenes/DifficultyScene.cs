@@ -44,12 +44,12 @@ namespace Game.Models.Scenes
             var ImpossibleDifficultyButton = new Button(impossiblePos, buttonScale, this, buttonTexture, "Невозможная", font, Color.Black);
             var ImpossibleIcon = new AtlasImage(new Vector2(impossiblePos.X - offset, impossiblePos.Y), iconScale, this, atlas, 7);
 
-            var HeaderText = new Text(Screen.ScreenTop + new Vector2(0f, 25f), Vector2.One * 2f, this, "Выберите сложность:", font, Color.LightYellow);
+            var HeaderText = new Text(Screen.ScreenTop + new Vector2(0f, 40f), Vector2.One * 2.5f, this, "Выберите сложность:", font, Color.White);
             HeaderText.AddOutline(outline);
 
             var exitButton = new Button(Screen.ScreenRightDown - new Vector2(150f, 100f), buttonScale, this, buttonTexture, "Обратно", font, Color.Black);
 
-            exitButton.OnClick += () => SceneManager.LoadScene(0);
+            exitButton.OnClick += () => SceneManager.LoadScene("Gamemode");
             EasyDifficultyButton.OnClick += () => SetDiff(Difficulty.Easy);
             NormalDifficultyButton.OnClick += () => SetDiff(Difficulty.Normal);
             HardDifficultyButton.OnClick += () => SetDiff(Difficulty.Hard);

@@ -36,7 +36,7 @@ namespace Game.Models.Scenes
             var AuthorText = new Text(Screen.ScreenRightDown - new Vector2(100, 65), Vector2.One * 1.4f, this, $"by {AuthorName}", textFont, Color.Red);
             AuthorText.AddOutline(new Outline(Color.Black, 0.4f));
 
-            PlayButton.OnClick += () => SceneManager.LoadScene("Difficulty");
+            PlayButton.OnClick += () => SceneManager.LoadScene("Gamemode");
             SettingsButton.OnClick += () => SceneManager.LoadScene("Settings", 0);
             ExitButton.OnClick += BreakingBad.AppQuit.Invoke;
         }

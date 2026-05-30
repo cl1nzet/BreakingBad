@@ -89,10 +89,12 @@ namespace Breaking_Bad
 
             var menuScene = new MenuScene();
             var settingsScene = new SettingsScene(_config, GraphicsDevice, _audio);
+            var gamemodeScene = new GamemodeScene();
             var difficultyScene = new DifficultyScene();
             var gameScene = new GameScene(GraphicsDevice);
             SceneManager.Add(menuScene);
             SceneManager.Add(settingsScene);
+            SceneManager.Add(gamemodeScene);
             SceneManager.Add(difficultyScene);
             SceneManager.Add(gameScene);
 

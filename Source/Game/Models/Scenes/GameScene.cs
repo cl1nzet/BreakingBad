@@ -86,7 +86,7 @@ namespace Game.Models.Scenes
                 onSkip: SkipRound
             );
 
-            exitButton.OnClick += () => SceneManager.LoadScene(0);
+            exitButton.OnClick += () => SceneManager.LoadScene("Difficulty");
 
             StartNewRound();
         }
