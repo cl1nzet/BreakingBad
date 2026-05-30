@@ -142,8 +142,10 @@ namespace Game.Utils
             if (type == typeof(int))
                 return (T)(object)int.Parse(value, CultureInfo.InvariantCulture);
 
-            if (type == typeof(float))
-                return (T)(object)float.Parse(value, CultureInfo.InvariantCulture);
+            if (type == typeof(float)) {
+                string sanitized = value.TrimEnd('f', 'F');
+                return (T)(object)float.Parse(sanitized, CultureInfo.InvariantCulture);
+            }
 
             if (type == typeof(bool))
                 return (T)(object)bool.Parse(value);

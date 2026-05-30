@@ -5,8 +5,10 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Input.Touch;
 
-namespace Engine.Models {
-    public sealed class Slider : GameObject, Specs.IUpdateable, Specs.IDrawable {
+namespace Engine.Models
+{
+    public sealed class Slider : GameObject, Specs.IUpdateable, Specs.IDrawable
+    {
         private readonly Image _track;
         private readonly Image _handle;
 
@@ -55,12 +57,22 @@ namespace Engine.Models {
             }
         }
 
-        public Slider(Vector2 position, Vector2 trackScale, Vector2 handleScale, Scene scene, Texture2D trackTexture, Texture2D handleTexture, float minValue = 0f, float maxValue = 1f, float startValue = 0f)
+        public Slider(Vector2 position, Vector2 trackScale, Vector2 handleScale, Scene scene, Texture2D trackTexture = null, Texture2D handleTexture = null, GraphicsDevice graphicsDevice = null, float minValue = 0f, float maxValue = 1f, float startValue = 0f)
             : base(new Transform(position), scene)
         {
             _minValue = minValue;
             _maxValue = maxValue;
             _currentValue = Math.Clamp(startValue, minValue, maxValue);
+
+            if (trackTexture == null && graphicsDevice != null)
+            {
+                trackTexture = GenerateDefaultTrack(graphicsDevice);
+            }
+
+            if (handleTexture == null && graphicsDevice != null)
+            {
+                handleTexture = GenerateDefaultHandle(graphicsDevice);
+            }
 
             _track = new Image(Transform.Position, trackScale, scene, trackTexture);
             _handle = new Image(Transform.Position, handleScale, scene, handleTexture);
@@ -154,6 +166,75 @@ namespace Engine.Models {
             percent = Math.Clamp(percent, 0f, 1f);
 
             CurrentValue = _minValue + percent * (_maxValue - _minValue);
+        }
+
+        private Texture2D GenerateDefaultTrack(GraphicsDevice device)
+        {
+            int width = 160;
+            int height = 20;
+            Texture2D texture = new Texture2D(device, width, height);
+            Color[] data = new Color[width * height];
+            Color trackColor = new Color(180, 180, 180, 255);
+            Color borderColor = new Color(130, 130, 130, 255);
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    if (x == 0 || x == width - 1 || y == 0 || y == height - 1)
+                    {
+                        data[y * width + x] = borderColor;
+                    }
+                    else
+                    {
+                        data[y * width + x] = trackColor;
+                    }
+                }
+            }
+
+            texture.SetData(data);
+            return texture;
+        }
+
+        private Texture2D GenerateDefaultHandle(GraphicsDevice device)
+        {
+            int size = 24;
+            Texture2D texture = new Texture2D(device, size, size);
+            Color[] data = new Color[size * size];
+            float radius = size * 0.5f;
+            float innerRadius = radius - 1f;
+
+            Color handleColor = new Color(245, 245, 245, 255);
+            Color borderColor = new Color(150, 150, 150, 255);
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = x - radius + 0.5f;
+                    float dy = y - radius + 0.5f;
+                    float distanceSquared = dx * dx + dy * dy;
+
+                    if (distanceSquared <= radius * radius)
+                    {
+                        if (distanceSquared >= innerRadius * innerRadius)
+                        {
+                            data[y * size + x] = borderColor;
+                        }
+                        else
+                        {
+                            data[y * size + x] = handleColor;
+                        }
+                    }
+                    else
+                    {
+                        data[y * size + x] = Color.Transparent;
+                    }
+                }
+            }
+
+            texture.SetData(data);
+            return texture;
         }
 
         public override void OnToggled(bool val)

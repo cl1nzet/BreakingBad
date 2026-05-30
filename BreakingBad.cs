@@ -15,10 +15,11 @@ namespace Breaking_Bad
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
-        private static Storage storage;
+        private static Storage _config;
         public static Action AppQuit;
         private Image _background;
         private AudioService _audio;
+
         public BreakingBad()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -26,26 +27,27 @@ namespace Breaking_Bad
             IsMouseVisible = true;
         }
 
-        protected override void Initialize() {
-            storage = new Storage();
-            storage.onFileCreated += SetDefaults;
-            storage.Initialize("config.txt");
+        protected override void Initialize()
+        {
+            _config = new Storage();
+            _config.onFileCreated += SetDefaults;
+            _config.Initialize("config.txt");
 
             TouchPanel.EnabledGestures = GestureType.Tap;
 
             Screen.Initialize(_graphics, Window);
 
-            Screen.SetWindowTitle(storage.Get("WinTitle", "ʙʀᴇᴀᴋɪɴɢ ʙᴀᴅ"));
-            Window.AllowUserResizing = storage.Get("WindowResizing", false);
+            Screen.SetWindowTitle(_config.Get<string>("WinTitle", "ʙʀᴇᴀᴋɪɴɢ ʙᴀᴅ"));
+            Window.AllowUserResizing = _config.Get<bool>("WindowResizing", false);
 
             AppQuit = Exit;
 
             base.Initialize();
 
             Screen.Resize(
-                storage.Get("ScreenWidth", 1920),
-                storage.Get("ScreenHeight", 1080),
-                storage.Get("FullScreen", false)
+                _config.Get<int>("ScreenWidth", 1920),
+                _config.Get<int>("ScreenHeight", 1080),
+                _config.Get<bool>("FullScreen", false)
             );
 
             Texture2D backgroundTexture = AssetManager.GetTexture("Background");
@@ -58,28 +60,35 @@ namespace Breaking_Bad
             LoadScenes();
         }
 
-        private void SetDefaults() {
-            storage.Set("WinTitle", "ʙʀᴇᴀᴋɪɴɢ ʙᴀᴅ");
-            storage.Set("ScreenWidth", "1920");
-            storage.Set("ScreenHeight", "1080");
-            storage.Set("FullScreen", "false");
-            storage.Set("WindowResizing", "false");
-            storage.Save();
+        private void SetDefaults()
+        {
+            _config.Set("WinTitle", "ʙʀᴇᴀᴋɪɴɢ ʙᴀᴅ");
+            _config.Set("ScreenWidth", "1920");
+            _config.Set("ScreenHeight", "1080");
+            _config.Set("FullScreen", "false");
+            _config.Set("WindowResizing", "false");
+            _config.Set("MusicVolume", "0.5");
+            _config.Save();
         }
 
-        protected override void LoadContent() {
+        protected override void LoadContent()
+        {
             AssetManager.Init(Content);
             _audio = new AudioService(2);
             _audio.LoadMusic("MenuTheme");
-            _audio.MasterVolume = 0.1f;
+
+            float savedVolume = _config.Get<float>("MusicVolume", 0.5f);
+            _audio.MusicVolume = savedVolume * 0.2f;
+
             _spriteBatch = new SpriteBatch(GraphicsDevice);
         }
 
-        private void LoadScenes() {
+        private void LoadScenes()
+        {
             SceneManager.OnSceneChanged += PlaybackTheme;
 
             var menuScene = new MenuScene();
-            var settingsScene = new SettingsScene();
+            var settingsScene = new SettingsScene(_config, GraphicsDevice, _audio);
             var difficultyScene = new DifficultyScene();
             var gameScene = new GameScene(GraphicsDevice);
             SceneManager.Add(menuScene);
@@ -98,14 +107,16 @@ namespace Breaking_Bad
             base.Update(gameTime);
         }
 
-        protected override void Draw(GameTime gameTime) {
+        protected override void Draw(GameTime gameTime)
+        {
             if (!IsActive) return;
 
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend);
 
-            if (!(SceneManager.CurrentScene is GameScene)) {
+            if (!(SceneManager.CurrentScene is GameScene))
+            {
                 _background.Draw(_spriteBatch);
             }
 
@@ -115,8 +126,10 @@ namespace Breaking_Bad
             base.Draw(gameTime);
         }
 
-        private void PlaybackTheme(Scene scene) {
-            if (scene is GameScene) {
+        private void PlaybackTheme(Scene scene)
+        {
+            if (scene is GameScene)
+            {
                 _audio.StopMusic();
                 return;
             }
