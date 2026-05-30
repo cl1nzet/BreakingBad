@@ -6,11 +6,11 @@ using Game.Core;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
-using System.Threading.Tasks;
 
 namespace Game.Models.Scenes
 {
-    public sealed class GameScene : Scene {
+    public sealed class GameScene : Scene
+    {
         public override string SceneName { get; set; } = "Game";
 
         private InteractiveText _equationText;
@@ -20,6 +20,7 @@ namespace Game.Models.Scenes
 
         private int _timerID = -1;
         private int _skipAttemps = 0;
+        private int _skips = 0;
         private ReactionData _currentReaction;
         private static float _maxTime;
         private GraphicsDevice _graphicsDevice;
@@ -27,6 +28,18 @@ namespace Game.Models.Scenes
         private const int _maxSkipAttemps = 3;
         private int _solvedEquations = -1;
         private int _correctSolvedEquations = 0;
+
+        private float _totalTimeSpent = 0f;
+        private int _lastRemainingSec = -1;
+        private bool _isSessionEnded = false;
+        private float _panelAnimProgress = 0f;
+
+        private Image _endPanelBg;
+        private Text _endTitle;
+        private Text _endDiffText;
+        private Text _endScoreText;
+        private Text _endSkipsText;
+        private Text _endAvgTimeText;
 
         public GameScene(GraphicsDevice graphicsDevice)
         {
@@ -46,11 +59,12 @@ namespace Game.Models.Scenes
                 color: Color.White
             );
             _equationText.AddOutline(outline);
+
             _timerText = new Text(
                 position: new Vector2(Screen.ScreenCenterX, Screen.ScreenCenterY - 325),
                 scale: Vector2.One * 1.2f,
                 scene: this,
-                text: "Осталось времени: 25с/25с",
+                text: "",
                 font: _gameFont,
                 color: Color.Green
             );
@@ -72,7 +86,7 @@ namespace Game.Models.Scenes
                 scene: this,
                 texture: AssetManager.GetTexture("Button"),
                 text: "Обратно",
-                font: AssetManager.GetFont("Arial"),
+                font: _gameFont,
                 textColor: Color.Black
             );
 
@@ -95,13 +109,43 @@ namespace Game.Models.Scenes
         {
             base.Update(gt);
 
+            if (_isSessionEnded)
+            {
+                if (_panelAnimProgress < 1f)
+                {
+                    _panelAnimProgress += (float)gt.ElapsedGameTime.TotalSeconds * 2f;
+                    if (_panelAnimProgress > 1f) _panelAnimProgress = 1f;
+
+                    float t = _panelAnimProgress;
+                    float ease = 1f - (1f - t) * (1f - t) * (1f - t);
+
+                    Vector2 startPos = new Vector2(Screen.ScreenCenterX, Screen.ScreenHeight + 600f);
+                    Vector2 currentCenter = Vector2.Lerp(startPos, Screen.ScreenCenter, ease);
+
+                    _endPanelBg.Transform.Position = currentCenter;
+                    _endTitle.Transform.Position = currentCenter - new Vector2(0f, 160f);
+                    _endDiffText.Transform.Position = currentCenter - new Vector2(0f, 80f);
+                    _endScoreText.Transform.Position = currentCenter - new Vector2(0f, 20f);
+                    _endSkipsText.Transform.Position = currentCenter + new Vector2(0f, 40f);
+                    _endAvgTimeText.Transform.Position = currentCenter + new Vector2(0f, 100f);
+                }
+                return;
+            }
+
             if (_timerID != -1)
             {
+                _totalTimeSpent += (float)gt.ElapsedGameTime.TotalSeconds;
                 float remaining = TimerManager.GetRemainingTime(_timerID);
+
                 if (remaining >= 0f)
                 {
-                    _timerText.Content = $"Осталось времени: {Math.Ceiling(remaining)}с/{_maxTime}с ";
-                    _timerText.Color = GetTimerColor(remaining);
+                    int currentSec = (int)Math.Ceiling(remaining);
+                    if (currentSec != _lastRemainingSec)
+                    {
+                        _lastRemainingSec = currentSec;
+                        _timerText.Content = $"Осталось времени: {currentSec}с/{_maxTime}с";
+                        _timerText.Color = GetTimerColor(remaining);
+                    }
                 }
             }
         }
@@ -115,83 +159,132 @@ namespace Game.Models.Scenes
                 float t = (percentage - 0.5f) * 2f;
                 return Color.Lerp(Color.Yellow, Color.Green, t);
             }
-            else
-            {
-                float t = percentage * 2f;
-                return Color.Lerp(Color.Red, Color.Yellow, t);
-            }
+
+            float tLow = percentage * 2f;
+            return Color.Lerp(Color.Red, Color.Yellow, tLow);
         }
 
-        private void VerifyEquation(string equation) {
+        private void VerifyEquation(string equation)
+        {
+            if (_isSessionEnded) return;
+
             Vector2 centerPosition = Screen.ScreenCenter;
             bool isCorrect = ChemicalEngine.Verify(_currentReaction, equation);
 
-            if (isCorrect) {
+            if (isCorrect)
+            {
                 _correctSolvedEquations++;
 
-                if (_solvedEquations >= _maxEquations - 1) {
+                if (_solvedEquations >= _maxEquations - 1)
+                {
                     SessionEnd();
                     return;
                 }
 
-                var textPopup = new FloatingText(centerPosition, new Vector2(4f), this, _gameFont, Color.Green, "Правильно! (+1)");
+                _ = new FloatingText(centerPosition, new Vector2(4f), this, _gameFont, Color.Green, "Правильно! (+1)");
                 StartNewRound();
             }
-            else {
-                var errorPopup = new FloatingText(centerPosition, new Vector2(4f), this, _gameFont, Color.Red, "Ошибка! (X)");
+            else
+            {
+                _ = new FloatingText(centerPosition, new Vector2(4f), this, _gameFont, Color.Red, "Ошибка! (X)");
             }
         }
 
-        private void SkipRound() {
-            FloatingText textPopup;
-            if (_skipAttemps >= _maxSkipAttemps) {
-                textPopup = new FloatingText(Screen.ScreenCenter, new Vector2(4f), this, _gameFont, Color.Red, "Все попытки утрачены! (X)");
+        private void SkipRound()
+        {
+            if (_isSessionEnded) return;
+
+            if (_skipAttemps >= _maxSkipAttemps)
+            {
+                _ = new FloatingText(Screen.ScreenCenter, new Vector2(4f), this, _gameFont, Color.Red, "Все попытки утрачены! (X)");
                 return;
             }
+
             _skipAttemps++;
-            textPopup = new FloatingText(Screen.ScreenCenter, new Vector2(4f), this, _gameFont, Color.Gray, "Пропущено (->)");
+            _skips++;
+            _ = new FloatingText(Screen.ScreenCenter, new Vector2(4f), this, _gameFont, Color.Gray, "Пропущено (->)");
             StartNewRound();
         }
 
-        private void StartNewRound() {
+        private void StartNewRound()
+        {
             _solvedEquations++;
             _solvedEquationsText.Content = $"Решено: {_solvedEquations}/{_maxEquations} примеров ({_correctSolvedEquations})";
             ResetTimer();
 
-            if (_solvedEquations >= _maxEquations) {
+            if (_solvedEquations >= _maxEquations)
+            {
                 SessionEnd();
                 return;
             }
+
             _maxTime = ChemicalEngine.GetDifficultyMaxTime();
             _currentReaction = ChemicalEngine.Generate();
 
             _equationText.Content = FormatReaction(_currentReaction);
-            
             _timerID = TimerManager.Add(_maxTime, OnTimerExpired);
+            _lastRemainingSec = -1;
         }
 
-        private async Task AsyncSessionEnd() {
-            var textPopup = new FloatingText(Screen.ScreenCenter, new Vector2(4f), this, _gameFont, Color.Green, "Сессия завершена! (ожидайте 2с)");
-            _solvedEquations = -1;
-            await Task.Delay(2000);
-            SceneManager.LoadScene();
+        private void SessionEnd()
+        {
+            ResetTimer();
+            _isSessionEnded = true;
+            _panelAnimProgress = 0f;
+
+            float avgTime = _maxEquations > 0 ? _totalTimeSpent / _maxEquations : 0f;
+            Vector2 startPos = new Vector2(Screen.ScreenCenterX, Screen.ScreenHeight + 600f);
+            Outline outline = new Outline(Color.Black, 0.4f);
+
+            _endPanelBg = new Image(startPos, new Vector2(0.5f, 0.8f), this, AssetManager.GetTexture("sign"), Color.DarkGray);
+
+            _endTitle = new Text(startPos, Vector2.One * 1.5f, this, "Итоги", _gameFont, Color.White);
+            _endTitle.AddOutline(outline);
+
+            _endDiffText = new Text(startPos, Vector2.One * 1.2f, this, $"Сложность: {GetDifficultyName()}", _gameFont, Color.Red);
+            _endDiffText.AddOutline(outline);
+
+            _endScoreText = new Text(startPos, Vector2.One * 1.2f, this, $"Решено: {_correctSolvedEquations}/{_maxEquations}", _gameFont, Color.Green);
+            _endScoreText.AddOutline(outline);
+
+            _endSkipsText = new Text(startPos, Vector2.One * 1.2f, this, $"Пропущено: {_skips}/{_maxEquations}", _gameFont, Color.Gray);
+            _endSkipsText.AddOutline(outline);
+
+            _endAvgTimeText = new Text(startPos, Vector2.One * 1.2f, this, $"Среднее время: {avgTime:F1}с", _gameFont, Color.Yellow);
+            _endAvgTimeText.AddOutline(outline);
         }
 
-        private void SessionEnd() => _ = AsyncSessionEnd();
+        private string GetDifficultyName()
+        {
+            return ChemicalEngine.CurrentDifficulty switch
+            {
+                Difficulty.Easy => "Лёгкая",
+                Difficulty.Normal => "Нормальная",
+                Difficulty.Hard => "Сложная",
+                Difficulty.Impossible => "Невозможная",
+                _ => "Неизвестно"
+            };
+        }
+
         private void OnTimerExpired(int id)
         {
-            if (id == _timerID) {
-                var textPopup = new FloatingText(Screen.ScreenCenter, new Vector2(4f), this, _gameFont, Color.Gray, "Пропущено (->)");
+            if (id == _timerID && !_isSessionEnded)
+            {
+                _ = new FloatingText(Screen.ScreenCenter, new Vector2(4f), this, _gameFont, Color.Gray, "Пропущено (->)");
+                _skips++;
                 StartNewRound();
             }
         }
-        private void ResetTimer() {
+
+        private void ResetTimer()
+        {
             if (_timerID != -1)
             {
                 TimerManager.Remove(_timerID);
                 _timerID = -1;
             }
         }
+
         private string FormatReaction(in ReactionData reaction)
         {
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
@@ -215,12 +308,16 @@ namespace Game.Models.Scenes
             return sb.ToString();
         }
 
-        public override void Unload() {
+        public override void Unload()
+        {
             base.Unload();
             ResetTimer();
             _solvedEquations = -1;
             _correctSolvedEquations = 0;
             _skipAttemps = 0;
+            _skips = 0;
+            _totalTimeSpent = 0f;
+            _isSessionEnded = false;
         }
     }
 }
