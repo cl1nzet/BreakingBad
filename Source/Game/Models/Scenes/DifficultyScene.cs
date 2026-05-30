@@ -3,83 +3,51 @@ using Engine.Models;
 using Engine.Utils;
 using Game.Core;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
-namespace Game.Models.Scenes {
-    public sealed class DifficultyScene : Scene {
+namespace Game.Models.Scenes
+{
+    public sealed class DifficultyScene : Scene
+    {
         public override string SceneName { get; set; } = "Difficulty";
 
-        public override void Start() {
-            float buttonRawHeight = AssetManager.GetTexture("Button").Height;
+        public override void Start()
+        {
+            Texture2D buttonTexture = AssetManager.GetTexture("Button");
+            SpriteFont font = AssetManager.GetFont("Arial");
+            SpriteAtlas atlas = new SpriteAtlas(AssetManager.GetTexture("icons_atlas"), 2, 4);
+
             float scaleY = 0.5f;
-            float buttonHeight = buttonRawHeight * scaleY;
+            float buttonHeight = buttonTexture.Height * scaleY;
             float spacing = 10f;
-
-            int totalButtons = 4;
-
-            float totalHeight = (buttonHeight * totalButtons) + (spacing * (totalButtons - 1));
-
+            float totalHeight = (buttonHeight * 4f) + (spacing * 3f);
             float startY = Screen.ScreenCenterY - (totalHeight * 0.5f) + (buttonHeight * 0.5f);
+
+            Vector2 buttonScale = new Vector2(0.5f, scaleY);
+            Vector2 iconScale = new Vector2(0.5f, 0.5f);
+            float offset = 160f;
             Outline outline = new Outline(Color.Black, 0.4f);
 
-            var EasyDifficultyButton = new Button(
-                position: new Vector2(Screen.ScreenCenterX, startY),
-                scale: new Vector2(0.5f, scaleY),
-                scene: this,
-                texture: AssetManager.GetTexture("Button"),
-                text: "Лёгкая",
-                font: AssetManager.GetFont("Arial"),
-                textColor: Color.Black
-            );
+            Vector2 easyPos = new Vector2(Screen.ScreenCenterX, startY);
+            var EasyDifficultyButton = new Button(easyPos, buttonScale, this, buttonTexture, "Лёгкая", font, Color.Black);
+            var EasyIcon = new AtlasImage(new Vector2(easyPos.X - offset, easyPos.Y), iconScale, this, atlas, 4);
 
-            var NormalDifficultyButton = new Button(
-                position: new Vector2(Screen.ScreenCenterX, startY + 1 * (buttonHeight + spacing)),
-                scale: new Vector2(0.5f, scaleY),
-                scene: this,
-                texture: AssetManager.GetTexture("Button"),
-                text: "Нормальная",
-                font: AssetManager.GetFont("Arial"),
-                textColor: Color.Black
-            );
+            Vector2 normalPos = new Vector2(Screen.ScreenCenterX, startY + (buttonHeight + spacing));
+            var NormalDifficultyButton = new Button(normalPos, buttonScale, this, buttonTexture, "Нормальная", font, Color.Black);
+            var NormalIcon = new AtlasImage(new Vector2(normalPos.X - offset, normalPos.Y), iconScale, this, atlas, 5);
 
-            var HardDifficultyButton = new Button(
-                position: new Vector2(Screen.ScreenCenterX, startY + 2 * (buttonHeight + spacing)),
-                scale: new Vector2(0.5f, scaleY),
-                scene: this,
-                texture: AssetManager.GetTexture("Button"),
-                text: "Сложная",
-                font: AssetManager.GetFont("Arial"),
-                textColor: Color.Black
-            );
+            Vector2 hardPos = new Vector2(Screen.ScreenCenterX, startY + 2f * (buttonHeight + spacing));
+            var HardDifficultyButton = new Button(hardPos, buttonScale, this, buttonTexture, "Сложная", font, Color.Black);
+            var HardIcon = new AtlasImage(new Vector2(hardPos.X - offset, hardPos.Y), iconScale, this, atlas, 6);
 
-            var ImpossibleDifficultyButton = new Button(
-                position: new Vector2(Screen.ScreenCenterX, startY + 3 * (buttonHeight + spacing)),
-                scale: new Vector2(0.5f, scaleY),
-                scene: this,
-                texture: AssetManager.GetTexture("Button"),
-                text: "Невозможная",
-                font: AssetManager.GetFont("Arial"),
-                textColor: Color.Black
-            );
+            Vector2 impossiblePos = new Vector2(Screen.ScreenCenterX, startY + 3f * (buttonHeight + spacing));
+            var ImpossibleDifficultyButton = new Button(impossiblePos, buttonScale, this, buttonTexture, "Невозможная", font, Color.Black);
+            var ImpossibleIcon = new AtlasImage(new Vector2(impossiblePos.X - offset, impossiblePos.Y), iconScale, this, atlas, 7);
 
-            var HeaderText = new Text(
-                position: Screen.ScreenTop + new Vector2(0, 25f),
-                scale: new Vector2(2f),
-                scene: this,
-                text: "Выберите сложность:",
-                font: AssetManager.GetFont("Arial"),
-                color: Color.LightYellow
-            );
+            var HeaderText = new Text(Screen.ScreenTop + new Vector2(0f, 25f), Vector2.One * 2f, this, "Выберите сложность:", font, Color.LightYellow);
             HeaderText.AddOutline(outline);
 
-            var exitButton = new Button(
-                position: Screen.ScreenRightDown - new Vector2(150f, 100f),
-                scale: new Vector2(0.5f, 0.5f),
-                scene: this,
-                texture: AssetManager.GetTexture("Button"),
-                text: "Обратно",
-                font: AssetManager.GetFont("Arial"),
-                textColor: Color.Black
-            );
+            var exitButton = new Button(Screen.ScreenRightDown - new Vector2(150f, 100f), buttonScale, this, buttonTexture, "Обратно", font, Color.Black);
 
             exitButton.OnClick += () => SceneManager.LoadScene(0);
             EasyDifficultyButton.OnClick += () => SetDiff(Difficulty.Easy);
@@ -88,7 +56,8 @@ namespace Game.Models.Scenes {
             ImpossibleDifficultyButton.OnClick += () => SetDiff(Difficulty.Impossible);
         }
 
-        public void SetDiff(Difficulty difficulty) {
+        public void SetDiff(Difficulty difficulty)
+        {
             ChemicalEngine.CurrentDifficulty = difficulty;
             SceneManager.LoadScene("Game");
         }

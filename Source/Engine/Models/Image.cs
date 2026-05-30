@@ -6,7 +6,7 @@ namespace Engine.Models
 {
     public class Image : GameObject, Specs.IDrawable
     {
-        protected readonly Texture2D _texture;
+        protected Texture2D _texture;
         private Color _color;
         protected Vector2 _origin;
 
@@ -22,9 +22,11 @@ namespace Engine.Models
             {
                 if (_isDirty)
                 {
-                    int x = (int)(Transform.Position.X - Width * 0.5f);
-                    int y = (int)(Transform.Position.Y - Height * 0.5f);
-                    _cachedRect = new Rectangle(x, y, Width, Height);
+                    int w = Width;
+                    int h = Height;
+                    int x = (int)(Transform.Position.X - w * 0.5f);
+                    int y = (int)(Transform.Position.Y - h * 0.5f);
+                    _cachedRect = new Rectangle(x, y, w, h);
                     _isDirty = false;
                 }
                 return _cachedRect;
@@ -37,23 +39,27 @@ namespace Engine.Models
         }
         public Texture2D Texture => _texture;
 
+        protected Image(Vector2 position, Vector2 scale, Scene scene, Color? color = null) : base(new Transform(position, scale), scene)
+        {
+            _color = color ?? Color.White;
+            Transform.onChanged += () => _isDirty = true;
+        }
+
         public Image(Transform transform = null, Scene scene = null, Texture2D texture = null, Color? color = null) : base(transform, scene)
         {
             _texture = texture;
             _color = color ?? Color.White;
-
-            Initialize();
+            if (_texture != null)
+            {
+                _origin = new Vector2(_texture.Width * 0.5f, _texture.Height * 0.5f);
+            }
+            Transform.onChanged += () => _isDirty = true;
         }
 
         public Image(Vector2 position, Vector2 scale, Scene scene = null, Texture2D texture = null, Color? color = null) : base(new Transform(position, scale), scene)
         {
             _texture = texture;
             _color = color ?? Color.White;
-            Initialize();
-        }
-
-        private void Initialize()
-        {
             if (_texture != null)
             {
                 _origin = new Vector2(_texture.Width * 0.5f, _texture.Height * 0.5f);
@@ -64,7 +70,6 @@ namespace Engine.Models
         public virtual void Draw(SpriteBatch sb)
         {
             if (_texture == null || !IsActive) return;
-
             sb.Draw(_texture, Transform.Position, null, _color, 0f, _origin, Transform.Scale, SpriteEffects.None, 0f);
         }
 
